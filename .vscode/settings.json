@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "jsondata.h": "c",
+        "config.h": "c",
+        "stdint.h": "c",
+        "jsonconfig.h": "c",
+        "cstdio": "c",
+        "jsonstatus.h": "c"
+    }
+}
