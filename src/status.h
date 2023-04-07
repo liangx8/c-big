@@ -5,10 +5,15 @@ struct STATUS
 {
     const char *src;
     const char *dst;
-    uint64_t step1time;
-    uint32_t pivot_value;
-    int64_t pivot_index;
-    int64_t total;
+    unsigned long step1time;
+    long pivot_index;
+    long total;
+    unsigned long pivot_value;
+    
 };
-int config_parse(struct STATUS *,const char *);
+
+struct STATUS *status_load_file_or_new(const char *);
+void status_free(struct STATUS *);
+
+void status_print(struct STATUS *stu);
 #endif

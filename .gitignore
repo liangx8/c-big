@@ -1,0 +1,3 @@
+src/big
+src/*.o
+src/*.json

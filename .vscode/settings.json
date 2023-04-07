@@ -5,6 +5,9 @@
         "stdint.h": "c",
         "jsonconfig.h": "c",
         "cstdio": "c",
-        "jsonstatus.h": "c"
+        "jsonstatus.h": "c",
+        "options.h": "c",
+        "malloc.h": "c",
+        "status.h": "c"
     }
 }
