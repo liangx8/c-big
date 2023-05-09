@@ -8,6 +8,11 @@
         "jsonstatus.h": "c",
         "options.h": "c",
         "malloc.h": "c",
-        "status.h": "c"
+        "status.h": "c",
+        "timestamp.h": "c",
+        "run_status.h": "c",
+        "error_stack.h": "c",
+        "parallel.h": "c",
+        "string.h": "c"
     }
 }

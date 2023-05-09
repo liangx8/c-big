@@ -2,14 +2,14 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-#CFLAGS+=-DNDEBUG
+CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)
 TARGET=big
 
 
 SRCS=$(wildcard *.c)
 OBJS=${SRCS:.c=.o}
-LDFLAGS=-Wall -g
+LDFLAGS=-Wall
 LDFLAGS+=$(shell pkgconf --libs jansson)
 LDFLAGS+=# -static
 

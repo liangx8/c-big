@@ -11,5 +11,7 @@ struct OPTION
 #define TEST 1
 #define LIST 2
 #define FIND 3
+#define GEN_TEST 4
+#define UNIT_TEST 5
 void parse(int argc, char *const argv[], struct OPTION *data);
 #endif
