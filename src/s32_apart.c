@@ -106,7 +106,7 @@ int apart32(struct STATUS *sta)
         ERROR_BY_ERRNO();
         goto err1_return;
     }
-    fdst=fopen(sta->dst,"w+");
+    fdst=fopen(sta->dst,"r+");
     if(fdst==NULL){
         ERROR_BY_ERRNO();
         goto err1_return;

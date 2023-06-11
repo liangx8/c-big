@@ -13,6 +13,8 @@
         "run_status.h": "c",
         "error_stack.h": "c",
         "parallel.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "pairs.h": "c",
+        "stdio.h": "c"
     }
 }

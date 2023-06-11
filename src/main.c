@@ -22,6 +22,7 @@ int list(const char *fname, int64_t offset, int limit);
 int gentestdata(const char *src, const char *dst, int64_t size);
 
 void test_mutex_lock(void);
+void test_pair(void);
 int main(int argc, char **argv)
 {
     pid_t pid = getpid();
@@ -115,7 +116,8 @@ int main(int argc, char **argv)
         }
         break;
     case UNIT_TEST:
-        test_mutex_lock();
+        //test_mutex_lock();
+        test_pair();
         break;
     case GEN_TEST:
     {

@@ -65,11 +65,10 @@ void one_master_one_slave(void){
 // 实验1 结束
 
 // 实验2:  1主线程 4 子线程
-// sem_init,sem_wait,sem_post,sem_destroy
-// 当一次交互完成后, 会产生生产/消费 双方对mlock的抢夺，事实上，在这个时候应该是生产方获取mlock以继续生产
+// 两个锁，两个条件信号
 struct Exam2Data{
-    pthread_mutex_t *tlock,*mlock;
-    pthread_cond_t *cond;
+    pthread_mutex_t *tm,*mm;
+    pthread_cond_t *tc,*mc;
     int *chan;
     int seq;
 };
@@ -78,14 +77,14 @@ void *child1(void *obj){
     struct Exam2Data *e2d=obj;
     for(int ix=0;ix<5;ix++){
         int val=e2d->seq *10 + ix;
-        pthread_mutex_lock(e2d->tlock);
-        printf("seq:%2d locked tlock\n",e2d->seq);
-        pthread_mutex_lock(e2d->mlock);
+        pthread_mutex_lock(e2d->tm);
+        pthread_mutex_lock(e2d->mm);
         *e2d->chan=val;
-        pthread_cond_wait(e2d->cond,e2d->mlock);
-        pthread_mutex_unlock(e2d->mlock);
-        pthread_mutex_unlock(e2d->tlock);
+        pthread_cond_signal(e2d->mc);
+        pthread_cond_wait(e2d->mc,e2d->mm);
 
+        pthread_mutex_unlock(e2d->mm);
+        pthread_mutex_unlock(e2d->tm);
         nanosleep(&MS1, NULL);
     }
     return NULL;
@@ -93,29 +92,32 @@ void *child1(void *obj){
 /**
  * @brief 用 <code>条件信号</code>配合<code>互斥锁</code> 1对多线程的通信
  **/
-void one_master_four_slave(void){
-    pthread_mutex_t ml=PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t tl=PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+void exam2(void){
+    pthread_mutex_t mm=PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t tm=PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t mc=PTHREAD_COND_INITIALIZER;
     pthread_t tid[4];
     int val=99;
     for(int ix=0;ix<4;ix++){
         struct Exam2Data *e2d=malloc(sizeof(struct Exam2Data));
-        e2d->mlock=&ml;
-        e2d->tlock=&tl;
+        e2d->mm=&mm;
+        e2d->tm=&tm;
+        e2d->mc=&mc;
         e2d->chan=&val;
-        e2d->cond=&cond;
         e2d->seq=ix;
         pthread_create(&tid[ix],NULL,child1,e2d);
     }
-    sleep(1);
     for(int ix=0;ix<20;ix++){
         int this;
-        pthread_mutex_lock(&ml);
+        pthread_mutex_lock(&mm);
+        if(val==99){
+            pthread_cond_wait(&mc,&mm);
+        }
         this=val;
-        pthread_mutex_unlock(&ml);
+        val=99; // val 已经被取出来。
+        pthread_cond_signal(&mc);
+        pthread_mutex_unlock(&mm);
         printf("%2d:%2d\n",ix,this);
-        pthread_cond_signal(&cond);
     }
     for(int ix=0;ix<4;ix++){
         pthread_join(tid[ix],NULL);
@@ -142,6 +144,6 @@ void exam3(void){
 // 实验3 结束
 void test_mutex_lock(void)
 {
-    one_master_four_slave();
+    exam2();
     //exam3();
 }
