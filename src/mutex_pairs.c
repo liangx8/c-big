@@ -291,7 +291,63 @@ void unit_test2(void)
     }
 
 }
+// unit test3 ---------------------------------------------------------
+struct test3_data{
+    pthread_mutex_t   *mutex;
+    pthread_cond_t    *cond;
+    int               *val;
+    int64_t           id;
+
+};
+void *test3_child(void * payload)
+{
+    struct test3_data *t3d = payload;
+    while(1){
+        pthread_mutex_lock(t3d->mutex);
+        pthread_cond_wait(t3d->cond,t3d->mutex);
+        int val=*t3d->val;
+        *t3d->val=val+1;
+        if(val<120){
+            pthread_cond_signal(t3d->cond);
+        } else {
+            pthread_cond_broadcast(t3d->cond);
+        }
+        pthread_mutex_unlock(t3d->mutex);
+        if(val<120){
+            printf("id(%ld),%d\n",t3d->id,val);
+        } else {
+            break;
+        }
+        nanosleep(&MS1,NULL);
+    }
+    return NULL;
+}
+void sleep(long);
+void unit_test3(void)
+{
+    /*没有得到预期结果。已知ｂｕｇ:signal与wait不能确保重叠*/
+    pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+    int sem;
+    pthread_t pid[4];
+    for(int ix=0;ix<4;ix++){
+        struct test3_data *td=malloc(sizeof(struct test3_data));
+        td->cond=&cond;
+        td->mutex=&mutex;
+        td->val=&sem;
+        td->id=ix;
+        pthread_create(&pid[ix],NULL,test3_child,td);
+    }
+    pthread_mutex_lock(&mutex);
+    pthread_cond_signal(&cond);
+    sem=100;
+    pthread_mutex_unlock(&mutex);
+    for(int ix=0;ix<4;ix++){
+        pthread_join(pid[ix],NULL);
+    }
+
+}
 void test_pair(void)
 {
-    unit_test1();
+    unit_test3();
 }
