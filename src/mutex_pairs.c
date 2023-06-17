@@ -295,52 +295,60 @@ void unit_test2(void)
 struct test3_data{
     pthread_mutex_t   *mutex;
     pthread_cond_t    *cond;
-    int               *val;
-    int64_t           id;
+    int               val;
+    // val 是否准备就绪
+    // １　ＯＫ，０　还没准备好
+    int               ready;
 
-};
+}t3d;
 void *test3_child(void * payload)
 {
-    struct test3_data *t3d = payload;
-    while(1){
-        pthread_mutex_lock(t3d->mutex);
-        pthread_cond_wait(t3d->cond,t3d->mutex);
-        int val=*t3d->val;
-        *t3d->val=val+1;
-        if(val<120){
-            pthread_cond_signal(t3d->cond);
-        } else {
-            pthread_cond_broadcast(t3d->cond);
+    int id=(int64_t) payload;
+    pthread_mutex_lock(t3d.mutex);
+     while(1){
+        if(t3d.ready==0){
+            pthread_cond_wait(t3d.cond,t3d.mutex);
+            if(t3d.ready==-1){
+                // test end
+                break;
+            }
+            t3d.ready=1;
+            t3d.val ++;
         }
-        pthread_mutex_unlock(t3d->mutex);
-        if(val<120){
-            printf("id(%ld),%d\n",t3d->id,val);
-        } else {
-            break;
-        }
+        pthread_mutex_unlock(t3d.mutex);
+        // job start
+        printf("id:%d,%d\n",id,t3d.val);
         nanosleep(&MS1,NULL);
+        // job end
+        pthread_mutex_lock(t3d.mutex);
+        if(t3d.val>20){
+            t3d.ready=-1;
+            pthread_cond_broadcast(t3d.cond);
+            break;
+        } else {
+            t3d.ready=0;
+            pthread_cond_signal(t3d.cond);
+        }
     }
+    pthread_mutex_unlock(t3d.mutex);
     return NULL;
 }
-void sleep(long);
 void unit_test3(void)
 {
     /*没有得到预期结果。已知ｂｕｇ:signal与wait不能确保重叠*/
     pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
     pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-    int sem;
     pthread_t pid[4];
+    t3d.cond=&cond;
+    t3d.mutex=&mutex;
+    t3d.val=0;
+    t3d.ready=0;
     for(int ix=0;ix<4;ix++){
-        struct test3_data *td=malloc(sizeof(struct test3_data));
-        td->cond=&cond;
-        td->mutex=&mutex;
-        td->val=&sem;
-        td->id=ix;
-        pthread_create(&pid[ix],NULL,test3_child,td);
+        pthread_create(&pid[ix],NULL,test3_child,(void *)((uint64_t)ix));
     }
     pthread_mutex_lock(&mutex);
     pthread_cond_signal(&cond);
-    sem=100;
+    t3d.ready=1;
     pthread_mutex_unlock(&mutex);
     for(int ix=0;ix<4;ix++){
         pthread_join(pid[ix],NULL);
