@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall -g
-CFLAGS+=-DNDEBUG
+#CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)
 TARGET=big
 

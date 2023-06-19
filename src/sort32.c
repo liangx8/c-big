@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include "status.h"
 #include "error_stack.h"
-#include "pairs.h"
+#include "bag.h"
 
 
 struct run_data{
-    struct MutexPairs *jobs;
+    struct Bag *jobs;
     const char *fname;
 };
 extern int int_act; // define in main.c
@@ -32,8 +32,8 @@ void *sort32_task(void *obj)
 int sort32(struct STATUS *sta)
 {
     struct run_data rd;
-    rd.jobs=mutex_with_array(sta->scope,sta->scope_cnt);
-    mutex_print(rd.jobs,stdout,10);
+    rd.jobs=bag_with_array(sta->scope,sta->scope_cnt);
+    bag_print(rd.jobs,stdout,10);
 
     return -1;
 }

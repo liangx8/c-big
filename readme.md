@@ -1,3 +1,2 @@
-# 知识点：
-## signal
-    当程序收到信号调用signal handler,系统是中断正在运行的进程，因此可以理解未signal的中断不是并行的。
+# quick sort for huge amount of data
+    To sort a huge amount of data in file system
