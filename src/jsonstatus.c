@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "timestamp.h"
 #include "error_stack.h"
 
 struct STATUS
@@ -25,8 +26,8 @@ struct STATUS
 #define get_string(json, key) json_string_value(json_object_get(json, key))
 #define get_int(json, key) json_integer_value(json_object_get(json, key))
 
-const char *default_src = "/home/tec/big/qq-test.bin";
-const char *default_dst = "/home/tec/big/qq-sorted.bin";
+const char *default_src = "big/qq-test.bin";
+const char *default_dst = "big/qq-sorted.bin";
 /**
  * @brief
  * 从jansson 中获取存由malloc获取的值(例如 char *)时,得到的值依赖json_t的reference count,
@@ -66,6 +67,7 @@ struct STATUS *status_file_load_or_new(const char *fname)
     sta->step1time      = get_int(obj, "step1time");
     sta->step2time      = get_int(obj, "step2time");
     sta->step1progress  = get_int(obj, "step1-progress");
+    sta->scope          = NULL;
     json_t *ary = json_object_get(obj, "scope");
     size_t size = json_array_size(ary);
     if (size)
@@ -95,11 +97,16 @@ struct STATUS *status_file_load_or_new(const char *fname)
 }
 void status_print(struct STATUS *stu)
 {
+    char tmstr[30];
+    timestamp_str(tmstr,stu->step1time);
+    printf("Status -------------------------------------------\n");
     printf("src:%s\ndst:%s\npivot-index: %ld\npivot: %u\n", stu->src, stu->dst, stu->pivot_index, stu->pivot_value);
+    printf("time: %s\n",tmstr);
     for (int ix = 0; ix < stu->scope_cnt; ix+=2)
     {
         printf("scope [%10ld,%10ld]\n", stu->scope[ix],stu->scope[ix+1]);
     }
+    printf("--------------------------------------------------\n");
 }
 /**
  * @param stu struct status

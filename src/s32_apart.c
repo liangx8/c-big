@@ -40,6 +40,7 @@ uint32_t getqq(struct buf_ctrl *buf){
     uint32_t *p=(uint32_t*)(buf->data+buf->pos * UNIT_SIZE);
     return *p;
 }
+int full_path(char *,const char *);
 void *apt_print(void *);
 /**
  * @brief 把记录分开2部分，第一部分的值小于分界位置的值，第二部分大于等于
@@ -53,6 +54,7 @@ int apart32(struct STATUS *sta)
     pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
     uint64_t pid;
     size_t num;
+    char *fn=malloc(512);
     //这部分没有运算过程，因此不考虑用多线程
     FILE *fsrc, *fdst;
     
@@ -66,8 +68,10 @@ int apart32(struct STATUS *sta)
         ERROR_BY_ERRNO();
         return -1;
     }
-    fsrc=fopen(sta->src,"r");
+    full_path(fn,sta->src);
+    fsrc=fopen(fn,"r");
     if(fsrc==NULL){
+        ERROR(fn);
         ERROR_BY_ERRNO();
         return -1;
     }
@@ -93,7 +97,7 @@ int apart32(struct STATUS *sta)
         left=sta->scope[0];
         right=sta->scope[1];
         cnt=sta->step1progress;
-        printf("从上传中断点继续 progress: %ld,left: %ld, right: %ld\n",cnt,left,right);
+        printf("从上次中断点继续 progress: %ld,left: %ld, right: %ld\n",cnt,left,right);
     } else {
         left=0;
         right=size;
@@ -106,11 +110,14 @@ int apart32(struct STATUS *sta)
         ERROR_BY_ERRNO();
         goto err1_return;
     }
-    fdst=fopen(sta->dst,"r+");
+    full_path(fn,sta->dst);
+    fdst=fopen(fn,"w+");
     if(fdst==NULL){
+        ERROR(fn);
         ERROR_BY_ERRNO();
         goto err1_return;
     }
+    free(fn);
 
     fseek(fsrc,cnt*UNIT_SIZE,SEEK_SET);
     buf.pos=0;
@@ -136,6 +143,9 @@ int apart32(struct STATUS *sta)
                 sta->pivot_value=povit_value;
                 sta->step1progress=cnt;
                 sta->scope_cnt=4;
+                if(sta->scope){
+                    free(sta->scope); // release the old one
+                }
                 sta->scope=malloc(sizeof(int64_t)*4);
                 sta->scope[0]=0;
                 sta->scope[1]=left;
@@ -269,16 +279,20 @@ int s32_apart_exam(struct STATUS *sta)
     int retval=0;
     int64_t pos;
     FILE *fp;
+    char *fn=malloc(256);
     buf.data=malloc(UNIT_SIZE*BUF_CNT);
     if(buf.data==NULL){
         ERROR_BY_ERRNO();
         return -1;
     }
-    fp=fopen(sta->dst,"r");
+    full_path(fn,sta->dst);
+    fp=fopen(fn,"r");
     if(fp==NULL){
+        ERROR(fn);
         ERROR_BY_ERRNO();
         return -1;
     }
+    free(fn);
     buf.pos=0;
     buf.size=0;
     pos=0;

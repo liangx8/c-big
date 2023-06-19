@@ -36,11 +36,11 @@ struct Bag *bag_with_array(const int64_t *data,int size){
             size=size-MAX;
             ps->next=malloc(sizeof(struct Bag));
             ps=ps->next;
-            ps->next=NULL;
         } else {
             si=size;
             size=0;
         }
+        ps->next=NULL;
         cur->idx=si;
         for(int ix=0;ix<si;ix++){
             cur->data[ix]=*sptr;

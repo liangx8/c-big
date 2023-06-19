@@ -2,17 +2,17 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <stdlib.h>
-#include <string.h>
 #include <signal.h>
-#include "parallel.h"
 #include "status.h"
 #include "options.h"
 #include "error_stack.h"
 #include "timestamp.h"
 
 const char *config_file = "status.json";
-const char *test_src = "/big/qq-test.bin";
+const char *test_src = "big/qq-test.bin";
 const char *origin = "/home/com/big-data/qq-phone.bin";
+
+int cpunum;
 
 int apart32(struct STATUS *);
 int sort32(struct STATUS *);
@@ -22,13 +22,13 @@ int list(const char *fname, int64_t offset, int limit);
 int gentestdata(const char *src, const char *dst, int64_t size);
 
 void unit_test(void); // test_thread.c
-
-int main(int argc, char **argv)
+void full_path(char *,const char *);
+int main(int argc,char *const argv[])
 {
     pid_t pid = getpid();
     struct STATUS *stu;
     struct OPTION opt;
-    char tmstr[30];
+    char tmstr[64];
     int64_t tm, tm1;
     // pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond_print = PTHREAD_COND_INITIALIZER;
@@ -41,9 +41,12 @@ int main(int argc, char **argv)
     {
         print_error_stack(stdout);
     }
-
+    cpunum=sysconf(_SC_NPROCESSORS_ONLN);
     timestamp_str(tmstr, tm);
-    printf("current timestamp %ld\ntime since Epoch 1970-01-01 00:00:00:%s\npid:%d\n", tm, tmstr, pid);
+    printf(
+    "current timestamp:                    %ld\n\
+time since Epoch 1970-01-01 00:00:00: %s\n\
+pid:                                  %d cpu:%d\n", tm, tmstr, pid,cpunum);
     stu = status_file_load_or_new(config_file);
     parse(argc, argv, &opt);
 
@@ -52,6 +55,11 @@ int main(int argc, char **argv)
 
     switch (opt.action)
     {
+    case RESORT:
+        stu->scope_cnt=0;
+        free(stu->scope);
+        stu->scope=NULL;
+        stu->step1progress=0;
     case SORT:
         {
             int res = apart32(stu);
@@ -126,8 +134,7 @@ int main(int argc, char **argv)
         // 用命令 -G 1000000
         char *fn;
         fn = malloc(255);
-        strcpy(fn, getenv("HOME"));
-        strcat(fn, test_src);
+        full_path(fn,test_src);
         if (gentestdata(origin, fn, opt.offset))
         {
             print_error_stack(stdout);
@@ -136,7 +143,8 @@ int main(int argc, char **argv)
     }
     break;
     default:
-        printf("unexpect return!\n");
+        usage(argv[0]);
+        return 0;
     }
     if (now(&tm1) == -1)
     {

@@ -60,3 +60,15 @@ int gentestdata(const char *src,const char *dst,int64_t size)
     fclose(fdst);
     return 0;
 }
+int rand(void); // stdlib.h
+int makedata(const char *dst,int64_t size)
+{
+    FILE *fdst=fopen(dst,"w+");
+    if(fdst==NULL){
+        ERROR_BY_ERRNO();
+        return -1;
+    }
+
+    fclose(fdst);
+    return 0;
+}

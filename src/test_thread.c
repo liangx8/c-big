@@ -233,13 +233,15 @@ void *test2_child(void *obj){
     return NULL;
 }
 const int64_t init_data[]={0,400,400,1000};
+extern int cpunum;
 void unit_test2(void)
 {
-    // 运行结果完成不对
+
     struct Bag *mp=bag_with_array(init_data,4);
     pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
     pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-    pthread_t pid[4];
+    
+    pthread_t pid[cpunum];
     t2d.cond=&cond;
     t2d.mutex=&mutex;
     t2d.tnum=0;
@@ -247,10 +249,10 @@ void unit_test2(void)
     t2d.seq=0;
     t2d.mp=mp;
     bag_print(mp,stdout,10);
-    for(int ix=0;ix<4;ix++){
+    for(int ix=0;ix<cpunum;ix++){
         pthread_create(&pid[ix],NULL,test2_child,(void *)(uint64_t)ix);
     }
-    for(int ix=0;ix<4;ix++){
+    for(int ix=0;ix<cpunum;ix++){
         pthread_join(pid[ix],NULL);
     }
     bag_free(mp);

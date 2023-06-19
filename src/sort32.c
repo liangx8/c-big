@@ -6,34 +6,46 @@
 #include "error_stack.h"
 #include "bag.h"
 
+#define MLOCK(mut)   if(pthread_mutex_lock(mut)) {ERROR("线程锁错误\n");return NULL;}
+#define MUNLOCK(mut) if(pthread_mutex_unlock(mut)) {ERROR("线程解锁错误\n");return NULL;}
 
 struct run_data{
     struct Bag *jobs;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *cond;
     const char *fname;
-};
+    int done;
+}sort_data;
 extern int int_act; // define in main.c
+extern int numcpu;
 
 int64_t sort32_partition(FILE *fh,int64_t *scope){
     return 0;
 }
 void *sort32_task(void *obj)
 {
-    struct run_data *rd=obj;
-    FILE *fh=fopen(rd->fname,"r+");
-    if (fh==NULL){
-        ERROR_BY_ERRNO();
-        int_act=SORTING_ERROR;
-        return NULL;
-    }
+    long id=(long)obj;
+    struct run_data *sd=&sort_data;
     while(1){
+        MLOCK(sd->mutex)
+        MUNLOCK(sd->mutex)
     }
     return NULL;
 }
+int full_path(char *,const char *);
 int sort32(struct STATUS *sta)
 {
-    struct run_data rd;
-    rd.jobs=bag_with_array(sta->scope,sta->scope_cnt);
-    bag_print(rd.jobs,stdout,10);
+    pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+    sort_data.cond=&cond;
+    sort_data.mutex=&mutex;
+    sort_data.done=0;
+    char *fn=malloc(256);
+    full_path(fn,sta->dst);
+    sort_data.fname=fn;
+    sort_data.jobs=bag_with_array(sta->scope,sta->scope_cnt);
+
+    bag_print(sort_data.jobs,stdout,10);
 
     return -1;
 }
