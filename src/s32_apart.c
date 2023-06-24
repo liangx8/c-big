@@ -47,7 +47,7 @@ void *apt_print(void *);
  * @param sta 配置
  * @return 返回分界的位置,返回的值属于第二部分
  */
-int apart32(struct STATUS *sta)
+void apart32(struct STATUS *sta)
 {
     struct run_data rd;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -66,14 +66,14 @@ int apart32(struct STATUS *sta)
     buf.data=malloc(UNIT_SIZE*BUF_CNT);
     if(buf.data==NULL){
         ERROR_BY_ERRNO();
-        return -1;
+        return;
     }
     full_path(fn,sta->src);
     fsrc=fopen(fn,"r");
     if(fsrc==NULL){
         ERROR(fn);
         ERROR_BY_ERRNO();
-        return -1;
+        return;
     }
     num=fread(&povit[0],UNIT_SIZE,1,fsrc);
     if(num==0 && ferror(fsrc)){
@@ -87,7 +87,7 @@ int apart32(struct STATUS *sta)
     if(sta->step1progress>=size){
         fclose(fsrc);
         free(buf.data);
-        return 100;
+        return;
     }
     if(sta->scope_cnt){
         if(sta->scope_cnt & 1){
@@ -197,13 +197,13 @@ int apart32(struct STATUS *sta)
                 }
                 break;
             case SORTING_BREAK:
+            int_act=SORTING_BREAK;
             sta->step1progress=cnt;
             sta->scope_cnt=2;
             sta->scope=malloc(sizeof(int64_t)*2);
             sta->scope[0]=left;
             sta->scope[1]=right;
 
-            case SORTING_ERROR:
             goto break_while;
         }
     }
@@ -214,7 +214,7 @@ int apart32(struct STATUS *sta)
     fclose(fdst);
     fclose(fsrc);
     free(buf.data);
-    return 0;
+    return;
 
 
 err_return:
@@ -222,7 +222,7 @@ err_return:
 err1_return:
     fclose(fsrc);
     free(buf.data);
-    return -1;
+    return;
 
 }
 
@@ -241,7 +241,6 @@ void *apt_print(void *obj)
     if (pthread_mutex_lock(prd->mutex))
     {
         ERROR("线程锁错误\n");
-        int_act=SORTING_ERROR;
         return NULL;
     }
     while (1)
@@ -256,10 +255,8 @@ void *apt_print(void *obj)
         case SORTING_BREAK:
             printf("排序中断，保存信息中...\n");
         case SORTING_DONE:
-        case SORTING_ERROR:
             if(pthread_mutex_unlock(prd->mutex)){
                 ERROR("线程解锁错误\n");
-                int_act=SORTING_ERROR;
             }
             return NULL;
         default:

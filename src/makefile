@@ -1,7 +1,8 @@
 .PHONY: clean
 CC=gcc
 RM=rm -rf
-CFLAGS=-Wall -g
+CFLAGS=-Wall
+#CFLAGS+=-g
 #CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)
 TARGET=big

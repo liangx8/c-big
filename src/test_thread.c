@@ -169,13 +169,13 @@ void *test2_child(void *obj){
     */
     struct test2_data *td=&t2d;
     //int64_t id=(int64_t) obj;
-    int64_t *data;
+    int64_t data[2];
     int idle;
     pthread_mutex_lock(td->mutex);
     idle=1;
     int64_t id=(int64_t)obj;
     while(1){
-        int res=bag_get(td->mp,&data);
+        int res=bag_get(td->mp,&data[0]);
         if(res==EMPTY){
             // 没有新的任务数据
             // 在空闲状态吗？

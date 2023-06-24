@@ -42,4 +42,11 @@ void print_error_stack(FILE *out){
         lead +=2;
     }
 }
-
+int has_error(void)
+{
+    return s_error != NULL;
+}
+void print_current_error(const char *prefix)
+{
+    printf("%s error code(%d) %s\n",prefix,errno,strerror(errno));
+}

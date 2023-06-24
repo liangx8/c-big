@@ -1,5 +1,7 @@
 {
     "files.associations": {
+        "*.kicad_sym": "lisp",
+        "*.kicad_mod": "lisp",
         "jsondata.h": "c",
         "config.h": "c",
         "stdint.h": "c",
@@ -15,6 +17,8 @@
         "parallel.h": "c",
         "string.h": "c",
         "pairs.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "cstring": "c",
+        "variant": "c"
     }
 }

@@ -23,6 +23,5 @@ void status_print(struct STATUS *stu);
 
 #define SHOW_PROGRESS 1
 #define SORTING_BREAK 2
-#define SORTING_ERROR 3
 #define SORTING_DONE  4
 #endif

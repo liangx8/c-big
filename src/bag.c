@@ -10,62 +10,29 @@
 #define MAX 1000
 struct Bag{
     int64_t data[MAX];
-    struct Bag *next;
     // 以1单位递增，但是数据本身是成对增加,
-    uint32_t idx;
-    uint32_t unused;
+    int idx;
+    
 };
 
 struct Bag *bag_create(void)
 {
     struct Bag *pa=malloc(sizeof(struct Bag));
     pa->idx=0;
-    pa->next=NULL;
     return pa;
 }
 struct Bag *bag_with_array(const int64_t *data,int size){
     assert((size & 1)==0);
-    int si;
-    const int64_t *sptr=data;
+    assert(size < MAX);
     struct Bag *ps=malloc(sizeof(struct Bag));
-    struct Bag *head=ps;
-    while(size){
-        struct Bag *cur=ps;
-        if(size>MAX){
-            si=MAX;
-            size=size-MAX;
-            ps->next=malloc(sizeof(struct Bag));
-            ps=ps->next;
-        } else {
-            si=size;
-            size=0;
-        }
-        ps->next=NULL;
-        cur->idx=si;
-        for(int ix=0;ix<si;ix++){
-            cur->data[ix]=*sptr;
-            sptr++;
-        }
+    for(int ix=0;ix<size;ix++){
+        ps->data[ix]=data[ix];
     }
-    return head;
+    ps->idx=size;
+    return ps;
 }
 void bag_free(struct Bag *ps){
-    struct Bag *ptr=ps;
-    while(ptr){
-        struct Bag *old=ptr;
-        ptr=old->next;
-        free(old);
-    }
-}
-int bag_is_empty(struct Bag *ps){
-    struct Bag *p=ps;
-    while(p){
-        if(p->idx){
-            return 0;
-        }
-        p=p->next;
-    }
-    return 1;
+    free(ps);
 }
 /**
  * @brief 获取一个数据
@@ -73,64 +40,44 @@ int bag_is_empty(struct Bag *ps){
  * @param ref 如果容器无内容, ref是NULL
  * @return 返回0，获取值成功。1，容器是空
 */
-int bag_get(struct Bag *ps,int64_t **ref){
-    struct Bag *ptr=ps;
-    while(ptr){
-        assert(ptr->idx >= 0);
-        if(ptr->idx){
-            int idx=ptr->idx-2;
-            ptr->idx=idx;
-            *ref=&ptr->data[idx];
-            return 0;
-        }
-        ptr=ptr->next;
+int bag_get(struct Bag *ps,int64_t *ref){
+    if(ps->idx){
+        int idx=ps->idx-2;
+        ps->idx=idx;
+        ref[0]=ps->data[idx];
+        ref[1]=ps->data[idx+1];
+        return 0;
     }
-    *ref=NULL;
     return EMPTY;
 }
+/**
+ * @brief put data
+ * @return  0 successful, -1 full of container
+*/
 int bag_put(struct Bag *ps,int64_t p1,int64_t p2){
-    struct Bag *ptr=ps;
-    while(1){
-        if(ptr->idx == MAX){
-            if(ptr->next==NULL){
-                ptr->next=malloc(sizeof(struct Bag));
-                ptr->next->idx=0;
-                ptr->next->next=NULL;
-            }
-            ptr=ptr->next;
-        } else {
-            int idx=ptr->idx;
-            ptr->idx=idx+2;
-            ptr->data[idx]=p1;
-            ptr->data[idx+1]=p2;
-            return 0;
-        }
+    if(ps->idx>=MAX){
+        return -1;
     }
+    struct Bag *ptr=ps;
+    int idx=ptr->idx;
+    ptr->idx=idx+2;
+    ptr->data[idx]=p1;
+    ptr->data[idx+1]=p2;
     return 0;
 }
 int bag_print(struct Bag *ps,FILE *out,int limit)
 {
-    uint32_t total=0;
-    int cnt=0;
-    int print=1;
     limit = limit /2;
-    while(ps){
-        total+=ps->idx;
-        uint32_t half=ps->idx/2;
-        for(int ix=0;ix<half;ix++){
-            if (print){
-                if(cnt < limit){
-                    cnt++;
-                    fprintf(out,"[%10ld,%10ld]\n",ps->data[ix*2],ps->data[ix*2+1]);
-                } else {
-                    fprintf(out,"...\n");
-                    print=0;
-                }
-            }
+    for(int ix=0;ix<limit;ix++){
+        if(ix *2 +1 >= ps->idx){
+            break;
         }
-        ps=ps->next;
+        fprintf(out,"[%10ld,%10ld]\n",ps->data[ix*2],ps->data[ix*2+1]);
     }
-    fprintf(out,"total: %d\n",total);
+    if(limit * 2 < ps->idx){
+        fprintf(out,"...\n");
+    }
+    fprintf(out,"total: %d\n",ps->idx);
     return 0;
 }
 
@@ -138,12 +85,12 @@ int bag_print(struct Bag *ps,FILE *out,int limit)
 const static int64_t base[]={0,200,200,400,400,1000};
 void bag_unit_test(void)
 {
-    int64_t *data;
+    int64_t data[2];
     struct Bag *pps=bag_with_array(base,6);
     bag_print(pps,stdout,20);
     int seq=0;
     while(1){
-        if(bag_get(pps,&data)){
+        if(bag_get(pps,&data[0])){
             break;
         }
         int64_t left=data[0];
