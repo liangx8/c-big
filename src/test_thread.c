@@ -212,12 +212,12 @@ void *test2_child(void *obj){
        
         int noData=1;
         if(mid-left>2){
-            bag_put(td->mp,left,mid);
+            bag_put2(td->mp,left,mid);
             pthread_cond_signal(td->cond);
             noData=0;
         }
         if(right-mid>2){
-            bag_put(td->mp,mid,right);
+            bag_put2(td->mp,mid,right);
             pthread_cond_signal(td->cond);
             noData=0;
         }

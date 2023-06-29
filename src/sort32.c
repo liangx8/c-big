@@ -210,7 +210,7 @@ void *sort32_task(void *obj)
                 break;
                 default:
                     MLOCK(sd->mutex)
-                    bag_put(sd->jobs,pd[0],mid);
+                    bag_put2(sd->jobs,pd[0],mid);
                     MSIGNAL(sd->cond);
                     MUNLOCK(sd->mutex)
             }
@@ -233,7 +233,7 @@ void *sort32_task(void *obj)
 
             default:
                 MLOCK(sd->mutex);
-                bag_put(sd->jobs,mid+1,pd[1]);
+                bag_put2(sd->jobs,mid+1,pd[1]);
                 MSIGNAL(sd->cond);
                 continue;
             }

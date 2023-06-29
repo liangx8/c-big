@@ -75,7 +75,7 @@ int quick_sort(uint8_t *mtr,int bufsize,int increment,int (*lt)(void *,void*))
 #ifndef NDEBUG
     int64_t max=0;
 #endif
-    if(bag_put(cot,0,total)){
+    if(bag_put2(cot,0,total)){
         ERROR("内部错误:struct Bag空间不够");
         return -1;
     }
@@ -86,7 +86,7 @@ int quick_sort(uint8_t *mtr,int bufsize,int increment,int (*lt)(void *,void*))
         int64_t sc0=scope[0];
         int64_t sc1=scope[1];
         if(mid-sc0>1){
-            if(bag_put(cot,sc0,mid)){
+            if(bag_put2(cot,sc0,mid)){
                 ERROR("内部错误:struct Bag空间不够");
                 return -1;
             }
@@ -97,7 +97,7 @@ int quick_sort(uint8_t *mtr,int bufsize,int increment,int (*lt)(void *,void*))
         }
         if(sc1-mid>2){
             
-            if(bag_put(cot,mid+1,sc1)){
+            if(bag_put2(cot,mid+1,sc1)){
                 ERROR("内部错误:struct Bag空间不够");
                 return -1;
             }

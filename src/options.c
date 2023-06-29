@@ -57,4 +57,9 @@ void parse(int argc, char *const argv[], struct OPTION *data)
             break;
         }
     }
+    if(argc>optind){
+        data->srcname=argv[optind];
+    } else{
+        data->srcname=NULL;
+    }
 }

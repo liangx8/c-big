@@ -11,6 +11,7 @@ int list(const char *fname, int64_t offset, int limit)
     int bsize = limit * ENTITY_SIZE;
     if (fh == NULL)
     {
+        ERROR(fname);
         ERROR_BY_ERRNO();
         return -1;
     }

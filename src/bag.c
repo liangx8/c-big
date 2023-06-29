@@ -50,11 +50,31 @@ int bag_get(struct Bag *ps,int64_t *ref){
     }
     return EMPTY;
 }
+int bag_put(struct Bag *ps,int64_t val)
+{
+    if(ps->idx>=MAX){
+        return -1;
+    }
+    struct Bag *ptr=ps;
+    int idx=ptr->idx;
+    ptr->idx=idx+1;
+    ptr->data[idx]=val;
+    return 0;
+}
+int bag_exist(struct Bag *ps,int64_t val){
+    int idx=ps->idx;
+    for(int ix=0;ix<idx;ix++){
+        if(ps->data[ix]==val){
+            return 1;
+        }
+    }
+    return 0;
+}
 /**
  * @brief put data
  * @return  0 successful, -1 full of container
 */
-int bag_put(struct Bag *ps,int64_t p1,int64_t p2){
+int bag_put2(struct Bag *ps,int64_t p1,int64_t p2){
     if(ps->idx>=MAX){
         return -1;
     }
@@ -97,11 +117,11 @@ void bag_unit_test(void)
         int64_t right=data[1];
         int64_t mid=(left+right)/2;
         if(mid-left > 3){
-            bag_put(pps,left,mid);
+            bag_put2(pps,left,mid);
         }
         printf("%4d:left:%4ld,mid:%4ld,right:%4ld \n",seq++,left,mid,right);
         if(right-mid > 3){
-            bag_put(pps,mid+1,right);
+            bag_put2(pps,mid+1,right);
         }
     }
     bag_print(pps,stdout,20);

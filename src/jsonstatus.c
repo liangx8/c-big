@@ -6,23 +6,22 @@
 
 #include "timestamp.h"
 #include "error_stack.h"
-
+#pragma pack(push,4)
 struct STATUS
 {
     const char *src;
     const char *dst;
-    uint64_t step1time;
-    uint64_t step2time;
-    // 未完成step1时，源当前的计数器值
-    int64_t step1progress;
-    int64_t pivot_index;
-    uint32_t pivot_value;
-    int32_t scope_cnt;
+    const char *preform_dst;
+    uint64_t   step1time;
+    uint64_t   step2time;
     // 准备要处理的分区,快速排序中partition的结果,必须成对出现
-    int64_t *scope;
+    int64_t    *scope;
+    int        scope_cnt;
+    // 0 建立目标文件阶段, 1 在０阶段中断，２在目标文件上排序
+    int        step;
     json_t *root;
 };
-
+#pragma pack(pop)
 #define get_string(json, key) json_string_value(json_object_get(json, key))
 #define get_int(json, key) json_integer_value(json_object_get(json, key))
 
@@ -49,49 +48,60 @@ struct STATUS *status_file_load_or_new(const char *fname)
         sta->src           = default_src;
         sta->dst           = default_dst;
         sta->step1time     = 0;
-        sta->pivot_index   = 0;
-        sta->scope_cnt     = 0;
-        sta->step1progress = 0;
+        sta->step          = 0;
         printf("读状态文件错误(%s)\n使用缺省配置\n", error.text);
-        sta->root=json_object();
+//        sta->root=json_object();
         return sta;
     }
-
 
     sta->root = obj;
 
     sta->src            = get_string(obj, "src");
     sta->dst            = get_string(obj, "dst");
-    sta->pivot_index    = get_int(obj, "pivot-index");
-    sta->pivot_value    = get_int(obj, "pivot-value");
-    sta->step1time      = get_int(obj, "step1time");
-    sta->step2time      = get_int(obj, "step2time");
-    sta->step1progress  = get_int(obj, "step1-progress");
-    sta->scope          = NULL;
-    json_t *ary = json_object_get(obj, "scope");
-    size_t size = json_array_size(ary);
-    if (size)
+    sta->step1time      = get_int   (obj, "step1time");
+    sta->step2time      = get_int   (obj, "step2time");
+    sta->step           = get_int   (obj, "step");
+    switch (sta->step)
     {
-        // scope中存放的是快速排序的分区数据,必须成对存在
-        if(size & 1){
-            // status文件的内容有错误
-            sta->step1time     = 0;
-            sta->pivot_index   = 0;
-            sta->scope_cnt     = 0;
-            sta->step1progress = 0;
-            printf("状态文件内容错误\n使用缺省配置\n");
-
-        } else {
-            sta->scope_cnt = size;
-            sta->scope = malloc(sizeof(int64_t) * size);
-            for (size_t ix = 0; ix < size; ix++)
-            {
-                json_t *json = json_array_get(ary, ix);
-                sta->scope[ix] = json_integer_value(json);
-            }
+    case 0:
+        sta->scope=NULL;
+        break;
+    case 1:
+    {
+        json_t *ary = json_object_get(obj, "scope");
+        size_t size = json_array_size(ary);
+        if(size!=3){
+            printf("状态文件内容不完整，对数据从新排序\n");
+            sta->step=0;
         }
-    } else {
-        sta->scope_cnt=0;
+        sta->scope=malloc(sizeof(int64_t)*3);
+        json_t *json = json_array_get(ary, 0);
+        sta->scope[0] = json_integer_value(json);
+        json = json_array_get(ary, 1);
+        sta->scope[1] = json_integer_value(json);
+        json = json_array_get(ary, 2);
+        sta->scope[2] = json_integer_value(json);
+    }
+    break;
+    case 2:
+    {
+        json_t *ary = json_object_get(obj, "scope");
+        size_t size = json_array_size(ary);
+        if(size & 1){
+            printf("状态文件内容不完整，对数据从新排序\n");
+            sta->step=0;
+            break;
+        }
+        sta->scope_cnt = size;
+        sta->scope = malloc(sizeof(int64_t) * size);
+        for (size_t ix = 0; ix < size; ix++)
+        {
+            json_t *json = json_array_get(ary, ix);
+            sta->scope[ix] = json_integer_value(json);
+        }
+    }
+    default:
+    break;
     }
     return sta;
 }
@@ -100,11 +110,21 @@ void status_print(struct STATUS *stu)
     char tmstr[30];
     timestamp_str(tmstr,stu->step1time);
     printf("Status -------------------------------------------\n");
-    printf("src:%s\ndst:%s\npivot-index: %ld\npivot: %u\n", stu->src, stu->dst, stu->pivot_index, stu->pivot_value);
-    printf("time: %s\n",tmstr);
-    for (int ix = 0; ix < stu->scope_cnt; ix+=2)
-    {
-        printf("scope [%10ld,%10ld]\n", stu->scope[ix],stu->scope[ix+1]);
+    printf("       src: %s\n       dst: %s\n      step: %d\n", stu->src, stu->dst,stu->step);
+    printf("step1 time: %s\n",tmstr);
+    if(stu->step==1){
+        printf("scope [%10ld,%10ld,%10ld]\n", stu->scope[0],stu->scope[1],stu->scope[2]);
+    } 
+    if(stu->step==2){
+        if(stu->step2time){
+            timestamp_str(tmstr,stu->step1time);
+            printf("step2 time: %s\n",tmstr);
+        }
+        for (int ix = 0; ix < stu->scope_cnt; ix+=2)
+        {
+            printf("scope [%10ld,%10ld]\n", stu->scope[ix],stu->scope[ix+1]);
+        }
+
     }
     printf("--------------------------------------------------\n");
 }
@@ -116,13 +136,11 @@ void status_print(struct STATUS *stu)
 int status_save(struct STATUS *stu, const char *fname)
 {
     json_t *obj = json_object();
-    json_object_set_new(obj, "src", json_string(stu->src));
-    json_object_set_new(obj, "dst", json_string(stu->dst));
+    json_object_set_new(obj, "src",       json_string(stu->src));
+    json_object_set_new(obj, "dst",       json_string(stu->dst));
     json_object_set_new(obj, "step1time", json_integer(stu->step1time));
     json_object_set_new(obj, "step2time", json_integer(stu->step2time));
-    json_object_set_new(obj, "step1-progress",json_integer(stu->step1progress));
-    json_object_set_new(obj, "pivot-index", json_integer(stu->pivot_index));
-    json_object_set_new(obj, "pivot-value", json_integer(stu->pivot_value));
+    json_object_set_new(obj, "step",      json_integer(stu->step));
     if (stu->scope_cnt)
     {
         json_t *ary = json_array();

@@ -6,6 +6,7 @@ struct OPTION
     int limit;
     unsigned int target;
     long offset;
+    const char *srcname;
 };
 #define SORT      0
 #define TEST      1

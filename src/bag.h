@@ -3,11 +3,14 @@
 struct Bag;
 struct Bag *bag_create      (void);
 struct Bag *bag_with_array  (const long *,int);
-void bag_free                 (struct Bag *);
-int bag_is_empty              (struct Bag *);
-int bag_get                   (struct Bag *,long *);
-int bag_put                   (struct Bag *,long,long);
-int bag_print                 (struct Bag *,void *out,int limit);
+void bag_free               (struct Bag *);
+int bag_is_empty            (struct Bag *);
+int bag_get                 (struct Bag *,long *);
+int bag_put2                (struct Bag *,long,long);
+int bag_print               (struct Bag *,void *out,int limit);
+int bag_put                 (struct Bag *,long);
+int bag_exist               (struct Bag *,long);
+
 /*
 struct MutexPairs;
 struct MutexPairs *mutex_create     (void);
