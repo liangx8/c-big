@@ -5,6 +5,7 @@ struct STATUS
 {
     const char *src;
     const char *dst;
+    const char *preform_src;
     const char *preform_dst;
     // 上次用的时间
     unsigned long step1time;

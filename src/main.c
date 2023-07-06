@@ -8,8 +8,9 @@
 #include "error_stack.h"
 #include "timestamp.h"
 
+#include "test_item.h"
+
 const char *config_file = "status.json";
-const char *test_src = "big/qq-test.bin";
 const char *origin = "/home/com/big-data/qq-test.bin";
 
 int cpunum;
@@ -19,11 +20,19 @@ void sort32(struct STATUS *);
 void s32_apart_exam(struct STATUS *);
 int sort_test(const char *);
 void sighandler(int signum);
-int list(const char *fname, int64_t offset, int limit);
+int list(const char *, int64_t , int,int);
 int gentestdata(const char *src, const char *dst, int64_t size);
 void mem_sort_test(const char *);
 void unit_test(void); // test_thread.c
 void full_path(char *,const char *);
+void seq_find(const char *fname,unsigned int val,int limit);
+
+
+void printsizeof(void)
+{
+    printf("short: %ld,int %ld, long %ld, size_t: %ld\n",sizeof(short),sizeof(int),sizeof(long),sizeof(size_t));
+}
+
 int main(int argc,char *const argv[])
 {
     pid_t pid = getpid();
@@ -31,6 +40,10 @@ int main(int argc,char *const argv[])
     struct OPTION opt;
     char tmstr[64];
     int64_t tm, tm1;
+    char *fns,*fnd;
+    fns=malloc(256);
+    fnd=malloc(256);
+
     // pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond_print = PTHREAD_COND_INITIALIZER;
     //     pthread_cond_t ma = PTHREAD_COND_INITIALIZER;
@@ -51,11 +64,11 @@ pid:                                  \033[0;31;47m%d\033[0m\n\
 cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpunum);
     stu = status_file_load_or_new(config_file);
     parse(argc, argv, &opt);
-    if(opt.srcname){
-        stu->preform_dst=opt.srcname;
-    } else {
-        stu->preform_dst=NULL;
-    }
+
+    full_path(fnd,stu->dst);
+    full_path(fns,stu->src);
+    stu->preform_dst=fnd;
+    stu->preform_src=fns;
 
     signal(SIGUSR1, sighandler);
     signal(SIGINT, sighandler);
@@ -96,6 +109,9 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
             // step1 完成
             // 如果返回不是0也不是-1，就是跳过
             status_print(stu);
+#ifdef DNUM
+            seq_find(stu->preform_dst,DNUM,10);
+#endif
             /*
             if(stu->step ==1){
                 printf("第一步被中断\n");
@@ -121,7 +137,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
 
         }*/
         {
-
+            printsizeof();
             status_print(stu);
             s32_apart_exam(stu);
             if(has_error()){
@@ -132,55 +148,48 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         break;
     case LIST:
     {
-        char *fn;
-        const char *dest;
-        fn = malloc(255);
-        if(stu->preform_dst){
-            dest=stu->preform_dst;
-        } else {
-            full_path(fn,stu->dst);
-            dest=fn;
+        if(opt.srcname){
+            stu->preform_dst=opt.srcname;
         }
-
-        if (list(dest, opt.offset, opt.limit))
+        if (list(stu->preform_dst, opt.offset, opt.limit,0))
         {
             print_error_stack(stdout);
         }
-        free(fn);
     }
         break;
     case UNIT_TEST:
         //test_mutex_lock();
         //test_pair();
-{
-        char *fn;
-        fn = malloc(255);
-        full_path(fn,stu->dst);
-
-        mem_sort_test(fn);
-        free(fn);
-}
-        //unit_test();
-        
+        if(opt.srcname){
+            stu->preform_dst=opt.srcname;
+        }
+        mem_sort_test(stu->preform_dst);
         break;
     case GEN_TEST:
     {
         // 用命令 -G 1000000
-        char *fn;
-        const char *dest;
-        fn = malloc(255);
-        if(stu->preform_dst){
-            dest=stu->preform_dst;
+        if(opt.srcname){
+            stu->preform_src=opt.srcname;
         } else {
-            full_path(fn,test_src);
-            dest=fn;
+            stu->preform_src=origin;
         }
-        if (gentestdata(origin, dest, opt.offset))
+        stu->preform_dst=fns;
+        if (gentestdata(stu->preform_src, stu->preform_dst, opt.offset))
         {
             print_error_stack(stdout);
         }
-        free(fn);
     }
+    break;
+    case GEN_RAND_TEST:
+    break;
+    case FIND:
+        if(opt.limit==0){
+            opt.limit=20;
+        }
+        if(opt.srcname){
+            stu->preform_dst=opt.srcname;
+        }
+        seq_find(stu->preform_dst,opt.offset,opt.limit);
     break;
     default:
         usage(argv[0]);

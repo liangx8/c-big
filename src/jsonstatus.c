@@ -11,6 +11,7 @@ struct STATUS
 {
     const char *src;
     const char *dst;
+    const char *preform_src;
     const char *preform_dst;
     uint64_t   step1time;
     uint64_t   step2time;
@@ -122,7 +123,7 @@ void status_print(struct STATUS *stu)
         }
         for (int ix = 0; ix < stu->scope_cnt; ix+=2)
         {
-            printf("scope [%10ld,%10ld]\n", stu->scope[ix],stu->scope[ix+1]);
+            printf("scope [%010ld,%010ld]\n", stu->scope[ix],stu->scope[ix+1]);
         }
 
     }

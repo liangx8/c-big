@@ -63,7 +63,7 @@ int gentestdata(const char *src,const char *dst,int64_t size)
 int rand(void); // stdlib.h
 int makedata(const char *dst,int64_t size)
 {
-    FILE *fdst=fopen(dst,"w+");
+    FILE *fdst=fopen(dst,"w");
     if(fdst==NULL){
         ERROR_BY_ERRNO();
         return -1;
