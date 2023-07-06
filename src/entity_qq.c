@@ -38,8 +38,16 @@ int qq_same(void *obj1,void *obj2,int64_t total)
  * @param seq 当前记录在号
  * @param obj 当前记录的指针
 */
-int qq_print(void *obj,int64_t seq){
+int qq_print(void *obj,int64_t seq,const char *color){
     struct qq_entity *qq=obj;
-    printf("%10ld:%10u %11lu\n",seq, qq->qq,qq->ph);
+    if(color){
+        printf("\033[0;%sm",color);
+    }
+    printf("%10ld:%10u %11lu",seq, qq->qq,qq->ph);
+    if(color){
+        printf("\033[0m\n");
+    } else {
+        printf("\n");
+    }
     return 0;
 }

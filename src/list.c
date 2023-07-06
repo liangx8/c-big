@@ -3,8 +3,8 @@
 #include <malloc.h>
 #include "error_stack.h"
 #define ENTITY_SIZE 12
-int qq_print(void *obj,int64_t seq);
-int list(const char *fname, int64_t offset, int limit)
+int qq_print(void *obj,int64_t seq,const char *);
+int list(const char *fname, int64_t offset, int limit,int highlight)
 {
     FILE *fh = fopen(fname, "rb");
     char *buf;
@@ -37,7 +37,12 @@ int list(const char *fname, int64_t offset, int limit)
     char *ptr=buf;
     for (int i = 0; i < limit; i++)
     {
-        qq_print(ptr,offset+i);
+        if(i==highlight){
+            qq_print(ptr,offset+i,";31");
+        } else{
+            qq_print(ptr,offset+i,NULL);
+        }
+
         ptr +=12;
     }
 

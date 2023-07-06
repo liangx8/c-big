@@ -9,7 +9,6 @@
 
 int qq_gt(void *,void *);
 int qq_lt(void *,void *);
-int qq_print(void *,int64_t);
 int qq_same(void *,void *,int64_t);
 
 void buble_sort(uint8_t *,int ,int ,int (*)(void *,void*));
