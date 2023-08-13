@@ -8,13 +8,15 @@
 #include "error_stack.h"
 #include "status.h"
 
-#include "test_item.h"
+//#include "test_item.h"
 
 
 #define UNIT_SIZE 12
 #define BUF_CNT 102400
 
-#define DEBUG_LOG(x) printf("%s(%3d):",__FILE__,__LINE__); x
+#define SIZE_IN_BYTE  (UNIT_SIZE * BUF_CNT)
+//#define DEBUG_LOG(x) printf("%s(%3d):",__FILE__,__LINE__); x
+#define DEBUG_LOG(fmt,args...) printf("%s(%3d):" fmt ,__FILE__,__LINE__,args)
 
 
 #ifdef DNUM
@@ -34,6 +36,7 @@ struct run_data{
     int64_t pos_src,pos_left,pos_right;
     uint8_t pivot[UNIT_SIZE];
 } apart_data;
+extern struct timespec NS100;
 void *apart_task(void *obj)
 {
     int id=(long)obj;
@@ -41,17 +44,17 @@ void *apart_task(void *obj)
     uint32_t pvalue= *((uint32_t *)ad->pivot);
     int src_idx,p1_idx,p2_idx;
     uint8_t *src,*p1,*p2;
-    src=malloc(BUF_CNT*UNIT_SIZE);
+    src=malloc(SIZE_IN_BYTE);
     if(src==NULL){
         ERROR_BY_ERRNO();
         return NULL;
     }
-    p1=malloc(BUF_CNT*UNIT_SIZE);
+    p1=malloc(SIZE_IN_BYTE);
     if(p1==NULL){
         ERROR_BY_ERRNO();
         return NULL;
     }
-    p2=malloc(BUF_CNT*UNIT_SIZE);
+    p2=malloc(SIZE_IN_BYTE);
     if(p2==NULL){
         ERROR_BY_ERRNO();
         return NULL;
@@ -61,9 +64,10 @@ void *apart_task(void *obj)
     p2_idx=0;
     // 源数据的缓存，如果到了文件结尾，就不会是BUF_CNT的大小
     int64_t last_size;
-    #ifdef DNUM
-    int show_dnum=0;
-    #endif
+#ifdef DNUM
+    DEBUG_LOG("id %2d: %8ld, %u\n",id,ftell(ad->fsrc),pvalue);
+    nanosleep(&NS100,NULL);
+#endif
     while(1){
         uint32_t *i32;
         if(src_idx==BUF_CNT){
@@ -81,9 +85,6 @@ void *apart_task(void *obj)
         }
         if(p1_idx==BUF_CNT){
             pthread_mutex_lock(ad->mu_writ);
-#ifdef DNUM
-            int64_t pos_dnum=ad->pos_left;
-#endif
             fseek(ad->fdst,ad->pos_left*UNIT_SIZE,SEEK_SET);
             int64_t size=fwrite(p1,UNIT_SIZE,BUF_CNT,ad->fdst);
             ad->pos_left += BUF_CNT;
@@ -93,53 +94,28 @@ void *apart_task(void *obj)
                 ERROR_BY_ERRNO();
                 return NULL;
             }
-#ifdef DNUM
-            if(show_dnum){
-                //DEBUG_LOG(printf("id:%2d, pos_left: %10ld\n",id,pos_dnum));
-                show_dnum=0;
-            }
-            fprintf(dout,JSON_LEFT_FORM,id,pos_dnum);
-#endif
         }
         if(p2_idx==BUF_CNT){
             pthread_mutex_lock(ad->mu_writ);
             ad->pos_right -= BUF_CNT;
-#ifdef DNUM
-            int64_t pos_dnum= ad->pos_right;
-#endif
             fseek(ad->fdst,ad->pos_right*UNIT_SIZE,SEEK_SET);
             int64_t size=fwrite(p1,UNIT_SIZE,BUF_CNT,ad->fdst);
             pthread_mutex_unlock(ad->mu_writ);
             p2_idx=0;
-#ifdef DNUM
-            fprintf(dout,JSON_RIGHT_FORM,id,pos_dnum);
-#endif
             if(size < BUF_CNT){
                 ERROR_BY_ERRNO();
                 return NULL;
             }
         }
         i32=(uint32_t*)(src + src_idx * UNIT_SIZE);
-        src_idx ++;
         if(*i32 < pvalue){
-#ifdef DNUM            
-            if(DNUM == *i32){
-                //DEBUG_LOG(printf("id:%2d,   p1_idx: %10d\n",id,p1_idx));
-                show_dnum=1;
-            }
-#endif
             memcpy(p1+p1_idx*UNIT_SIZE,src+src_idx * UNIT_SIZE,UNIT_SIZE);
             p1_idx++;
         } else {
-#ifdef DNUM
-            if(DNUM == *i32){
-                DEBUG_LOG(printf("id:%2d,  p2_idx: %10d\n",id,p2_idx));
-                show_dnum=1;
-            }
-#endif
             memcpy(p2+p2_idx*UNIT_SIZE,src+src_idx * UNIT_SIZE,UNIT_SIZE);
             p2_idx++;
         }
+        src_idx ++;
         if(int_act==SHOW_PROGRESS){
             int act;
             pthread_mutex_lock(ad->mu_read);
@@ -168,14 +144,8 @@ void *apart_task(void *obj)
             p2_idx++;
         }
         if(p1_idx==BUF_CNT){
-#ifdef DNUM
-            int64_t pos_dnum;
-#endif
             p1_idx=0;
             pthread_mutex_lock(ad->mu_writ);
-#ifdef DNUM
-            pos_dnum = ad->pos_left;
-#endif
             fseek(ad->fdst,ad->pos_left*UNIT_SIZE,SEEK_SET);
             int64_t size=fwrite(p1,UNIT_SIZE,BUF_CNT,ad->fdst);
             ad->pos_left += BUF_CNT;
@@ -184,20 +154,11 @@ void *apart_task(void *obj)
                 ERROR_BY_ERRNO();
                 return NULL;
             }
-#ifdef DNUM
-            fprintf(dout,JSON_LEFT_FORM,id,pos_dnum);
-#endif
         }
         if(p2_idx==BUF_CNT){
-#ifdef DNUM
-            int64_t pos_dnum;
-#endif
             p2_idx=0;
             pthread_mutex_lock(ad->mu_writ);
             ad->pos_right -= BUF_CNT;
-#ifdef DNUM
-            pos_dnum = ad->pos_right;
-#endif
             fseek(ad->fdst,ad->pos_right*UNIT_SIZE,SEEK_SET);
             int64_t size=fwrite(p1,UNIT_SIZE,BUF_CNT,ad->fdst);
             pthread_mutex_unlock(ad->mu_writ);
@@ -205,20 +166,11 @@ void *apart_task(void *obj)
                 ERROR_BY_ERRNO();
                 return NULL;
             }
-#ifdef DNUM
-            fprintf(dout,JSON_RIGHT_FORM,id,pos_dnum);
-#endif
         }
     }
     // 最后把剩下的p1,p2都写到文件中
     if(p1_idx){
-#ifdef DNUM
-            int64_t pos_dnum;
-#endif
         pthread_mutex_lock(ad->mu_writ);
-#ifdef DNUM
-            pos_dnum = ad->pos_left;
-#endif
         fseek(ad->fdst,ad->pos_left*UNIT_SIZE,SEEK_SET);
         int64_t size=fwrite(p1,UNIT_SIZE,p1_idx,ad->fdst);
         if(size < p1_idx){
@@ -228,23 +180,14 @@ void *apart_task(void *obj)
             ad->pos_left += p1_idx;
         }
         pthread_mutex_unlock(ad->mu_writ);
-#ifdef DNUM
-            fprintf(dout,JSON_LEFT_FORM,id,pos_dnum);
-#endif
         //printf("id:%2d,pos_left :%10ld, p1_idx:%10d\n",id,ad->pos_left,p1_idx);
         if(has_error()){
             return NULL;
         }
     }
     if(p2_idx){
-#ifdef DNUM
-        int64_t pos_dnum;
-#endif
         pthread_mutex_lock(ad->mu_writ);
         ad->pos_right -= p2_idx;
-#ifdef DNUM
-        pos_dnum = ad->pos_right;
-#endif
         fseek(ad->fdst,ad->pos_right * UNIT_SIZE,SEEK_SET);
         int64_t size=fwrite(p2,UNIT_SIZE,p2_idx,ad->fdst);
         pthread_mutex_unlock(ad->mu_writ);
@@ -253,9 +196,6 @@ void *apart_task(void *obj)
             //出错了。
             ERROR_BY_ERRNO();
         }
-#ifdef DNUM
-            fprintf(dout,JSON_RIGHT_FORM,id,pos_dnum);
-#endif
     }
     free(src);
     free(p1);
@@ -277,9 +217,6 @@ void apart32(struct STATUS *stu)
     pthread_mutex_t mu_read=PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t mu_writ=PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef DNUM
-    dout=fopen("tmp.json","w+");
-#endif
     fh=fopen(stu->preform_dst,"w+");
     if(fh==NULL){
         ERROR(stu->preform_dst);
@@ -298,7 +235,7 @@ void apart32(struct STATUS *stu)
     amount=ftell(fh);
     //assert((amount % UNIT_SIZE) ==0 );
     if(amount % UNIT_SIZE){
-        ERROR("文件大小不能对齐１２字节\n");
+        ERROR("文件大小不能对齐12字节\n");
         fclose(fh);
         fclose(apart_data.fdst);
         return;
@@ -323,6 +260,8 @@ void apart32(struct STATUS *stu)
         ERROR_BY_ERRNO();
         return;
     }
+    uint32_t *upt=(uint32_t *)&apart_data.pivot[0];
+    printf("pivot value %u\n",*upt);
     //fseek(fh,apart_data.pos_src * UNIT_SIZE,SEEK_SET);
     apart_data.mu_read   = &mu_read;
     apart_data.mu_writ   = &mu_writ;
@@ -336,9 +275,6 @@ void apart32(struct STATUS *stu)
         pthread_join(pid[ix],NULL);
     }
     free(pid);
-#ifdef DNUM
-    fclose(dout);
-#endif
     if(has_error()){
         return;
     }

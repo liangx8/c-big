@@ -8,7 +8,7 @@
 #include "error_stack.h"
 #include "timestamp.h"
 
-#include "test_item.h"
+//#include "test_item.h"
 
 const char *config_file = "status.json";
 const char *origin = "/home/com/big-data/qq-test.bin";
@@ -27,6 +27,7 @@ void unit_test(void); // test_thread.c
 void full_path(char *,const char *);
 void seq_find(const char *fname,unsigned int val,int limit);
 
+void test_multi_write(void);
 
 void printsizeof(void)
 {
@@ -137,13 +138,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
 
         }*/
         {
-            printsizeof();
-            status_print(stu);
             s32_apart_exam(stu);
-            if(has_error()){
-                print_error_stack(stdout);
-                return -1;
-            }
         }
         break;
     case LIST:

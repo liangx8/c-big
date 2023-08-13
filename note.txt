@@ -1,0 +1,2 @@
+1 s32_apart 完成。
+2 用函数s32_apart_exam　测试结果正确
