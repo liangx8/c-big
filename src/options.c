@@ -10,10 +10,37 @@ const char *usage_str="%s [option]\n\
     -f        Find record\n\
     -t        Ordered testing of database\n\
     -T        Unit test\n\
+    -p <n,m>  test partition\n\
     -l <n>    Limit of list record\n\
     -o <n>    Offset of list record\n";
 void usage(const char *me){
     printf(usage_str,me);
+}
+
+int populate_num(struct OPTION *ptr,char *str)
+{
+    char buf[16];
+    int ix=0;
+    int comma=-1;
+    while(str[ix]){
+        if(str[ix]==','){
+            buf[ix]=0;
+            ptr->offset=atoi(buf);
+            comma=ix;
+        }else {
+            buf[ix]=str[ix];
+        }
+        ix++;
+    }
+    if(comma < 0){
+        return -1;
+    }
+    ptr->limit=atoi(str+comma+1);
+    if(ptr->offset >= ptr->limit){
+        return -1;
+    }
+    return 0;
+
 }
 void parse(int argc, char *const argv[], struct OPTION *data)
 {
@@ -21,7 +48,7 @@ void parse(int argc, char *const argv[], struct OPTION *data)
     data->limit=20;
     data->offset=0;
     data->action=SORT;
-    while ((opt = getopt(argc, argv, "n:hG:f:tTl:o:b")) != -1)
+    while ((opt = getopt(argc, argv, "n:hG:f:tT:l:o:bp:d")) != -1)
     {
         switch (opt)
         {
@@ -34,6 +61,11 @@ void parse(int argc, char *const argv[], struct OPTION *data)
             break;
         case 'T':
             data->action = UNIT_TEST;
+            if(optarg[0]=='\0'){
+                data->testname=NULL;
+            } else {
+                data->testname=optarg;
+            }
             break;
         case 't':
             data->action = TEST;
@@ -57,6 +89,19 @@ void parse(int argc, char *const argv[], struct OPTION *data)
             // 生成测试数据
             data->action=GEN_TEST;
             data->offset=atoi(optarg);
+            break;
+        case 'p':
+            if(populate_num(data,optarg)){
+                printf("参数错误");
+                data->offset=0;
+                data->limit=0;
+                data->action=-1;
+            }else {
+                data->action=TEST_PART;
+            }
+            break;
+        case 'd':
+            data->action=DUPLICATE;
             break;
         case 'h':
         default:

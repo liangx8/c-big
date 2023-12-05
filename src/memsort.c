@@ -4,35 +4,38 @@
 #include <string.h>
 #include "error_stack.h"
 #include "bag.h"
-
+extern int int_act;
 /*冒泡排序*/
-int buble_sort(uint8_t *buf,int bufsize,int increment,int (*cmp)(void *,void*))
+void buble_sort(uint8_t *buf,size_t cnt,size_t increment,int (*cmp)(const void *,const void*))
 {
     uint8_t save[increment];
-    int cnt=bufsize/increment;
-    for(int ix=0;ix<cnt;ix++){
+    for(size_t ix=0;ix<cnt;ix++){
         int touch=0;
-        int update=0;
+        size_t update=0;
         uint8_t *ptr=buf+ix*increment;
         memcpy(save,ptr,increment);
 
-        for(int iy=ix+1;iy<cnt;iy++){
+        for(size_t iy=ix+1;iy<cnt;iy++){
             uint8_t *src=buf+iy*increment;
             if(cmp(ptr,src)>0){
                 memcpy(ptr,src,increment);
                 touch=1;
                 update=iy;
             }
+            if(int_act==99){
+                int_act=0;
+                printf("total:%10ld,ix: %10ld,iy: %10ld\n",cnt,ix,iy);
+            }
         }
         if(touch){
             memcpy(buf+update*increment,save,increment);
         }
     }
-    return 0;
+    return;
 }
 /* 快速排序 
 */
-int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*lt)(void *,void*))
+int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*cmp)(const void *,const void*))
 {
     uint8_t pivot[increment];
     uint8_t store[increment];
@@ -43,7 +46,7 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*lt)(voi
         if(store_idx == pos2-1){
             return store_idx;
         }
-        if(lt(mtr+store_idx*increment,pivot)){
+        if(cmp(mtr+store_idx*increment,pivot)<0){
             store_idx++;
         } else {
             break;
@@ -53,7 +56,7 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*lt)(voi
     memcpy(store,pstore,increment);
     for(int64_t ix=store_idx+1;ix<pos2-1;ix++){
         uint8_t *pix=mtr+ix*increment;
-        if(lt(pix,pivot)){
+        if(cmp(pix,pivot)<0){
 
             memcpy(pstore,pix,increment);
             memcpy(pix,store,increment);
@@ -67,64 +70,37 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*lt)(voi
     return store_idx;
 }
 
-int quick_sort(uint8_t *mtr,int bufsize,int increment,int (*lt)(void *,void*))
+void quick_sort(uint8_t *mtr,size_t total,size_t increment,int (*lt)(const void *,const void*))
 {
     struct Bag *cot=bag_create();
-    long total=bufsize/increment;
-    int64_t stack=1;
-#ifndef NDEBUG
-    int64_t max=0;
-#endif
     if(bag_put2(cot,0,total)){
         ERROR("内部错误:struct Bag空间不够");
-        return -1;
+        return;
     }
     int64_t scope[2];
     while(bag_get(cot,&scope[0])==0){
-        stack--;
         int64_t mid=qpart(mtr,increment,scope[0],scope[1],lt);
         int64_t sc0=scope[0];
         int64_t sc1=scope[1];
         if(mid-sc0>1){
             if(bag_put2(cot,sc0,mid)){
                 ERROR("内部错误:struct Bag空间不够");
-                return -1;
+                return;
             }
-            stack++;
-#ifndef NDEBUG
-            if(stack>max)max=stack;
-#endif
         }
         if(sc1-mid>2){
             
             if(bag_put2(cot,mid+1,sc1)){
                 ERROR("内部错误:struct Bag空间不够");
-                return -1;
+                return;
             }
-            stack++;
-#ifndef NDEBUG
-            if(stack>max)max=stack;
-#endif
         }
     }
     bag_free(cot);
-#ifndef NDEBUG
-    return max;
-#else
-    return 0;
-#endif
+    return;
 
 }
 
-/**
- * @brief sort data in memory
- * @param buf the pointer of memory that is going to sorting
- * @param bufsize size of buffer
- * @param increment size of object
- * @param cmp object compare 
-*/
-void mem_sort(uint8_t *buf,int bufsize,int increment,int (*cmp)(void *,void*)){
 
-}
 
 

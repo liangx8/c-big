@@ -2,7 +2,7 @@
 CC=gcc
 RM=rm -rf
 CFLAGS=-Wall
-#CFLAGS+=-g
+CFLAGS+=-O2
 #CFLAGS+=-DFIXING_BUG
 #CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)

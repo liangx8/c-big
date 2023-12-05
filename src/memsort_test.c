@@ -1,63 +1,92 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <string.h>
+#include <stdlib.h>
 #include "timestamp.h"
 #include "error_stack.h"
-// 27秒
-#define TOTAL 3000000
-//#define TOTAL 20000
+#define OBJSIZE 12
 
-int qq_gt(void *,void *);
-int qq_lt(void *,void *);
-int qq_same(void *,void *,int64_t);
+typedef int (*itcmp)(const void *,const void *);
 
-void buble_sort(uint8_t *,int ,int ,int (*)(void *,void*));
-int quick_sort(uint8_t *,int ,int ,int (*)(void *,void*));
+int qq_cmp(const void *,const void *);
 
-uint8_t *create_data(const char *fname,int amount){
-    uint8_t *ary=malloc(amount*12);
-    FILE *fh=fopen(fname,"r");
-    if(fh==NULL){
-        print_current_error(fname);
-        free(ary);
+void buble_sort(void *,size_t ,size_t ,itcmp);
+void quick_sort(void *,size_t ,size_t ,itcmp);
+long random(void);
+struct sort_para{
+    const char *desc;
+    void *data;
+    size_t total;
+    size_t size;
+    itcmp cmp;
+};
+uint8_t *randomdata(long total)
+{
+    uint8_t *ary=malloc(OBJSIZE*total);
+    if(ary==NULL){
         return NULL;
     }
-    fread(ary,amount,12,fh);
-    fclose(fh);
+    for(long ix=0;ix<total;ix++){
+        int32_t *iptr=(int32_t*)(ary + ix*12);
+        int64_t *dptr=(int64_t*)(ary+ix*12 + 4);
+        *iptr=(int32_t )random();
+        *dptr= ix;
+    }
     return ary;
 }
-
-void mem_sort_test(const char *fname){
+int run_sort(
+    struct sort_para *para,
+    void (*sort)(void *,size_t,size_t,itcmp))
+{
     char tmstr[256];
     long tm1,tm2;
-    printf("data from file %s\n",fname);
-    uint8_t *ary=create_data(fname,TOTAL);
-    if(ary==NULL){
-        return;
-    }
-    printf("正在快速排序%d个对象",TOTAL);
-    fflush(stdout);
+    printf("正在\033[0;34m%s\033[0m, %ld个对象",para->desc,para->total);
+    fflush(stdout);    
     now(&tm1);
-    int res=quick_sort(ary,TOTAL*12,12,qq_lt);
+    sort(para->data,para->total,para->size,para->cmp);
     now(&tm2);
-    if(res<0){
-        print_error_stack(stdout);
-        return;
-    }
-    for(int64_t ix=0;ix<TOTAL-1;ix++){
-        if(qq_lt(ary+(ix+1)*12,ary + ix *12)){
+    for(size_t ix=0;ix<para->total -1;ix++){
+        if(para->cmp(para->data+ix*para->size,para->data + (ix+1) * para->size)>0){
             printf("数组没有被正确排序\n");
-            free(ary);
-            return;
+            return -1;
         }
     }
-
-    timestamp_str(tmstr,tm2-tm1);
-#ifndef NDEBUG
-    printf("用时 %s\n 最大内存使用：%d\n　正确排序\n",tmstr,res);
-#else
-    printf("用时 %s\n　正确排序\n",tmstr);
-#endif
-
-   free(ary);
+    timestamp_str(&tmstr[0],tm2-tm1);
+    printf("正确排序，用时%s\n",tmstr);
+    return 0;
+}
+int mem_sort_test(long total){
+    struct sort_para pr;
+    uint8_t *org=randomdata(total);
+    if(org==NULL){
+        return -1;
+    }
+    uint8_t *ary=malloc(total * OBJSIZE);
+    if(ary==NULL){
+        free(org);
+        return -1;
+    }
+    memcpy(ary,org,total*OBJSIZE);
+    pr.cmp=qq_cmp;
+    pr.data=ary;
+    pr.total=total;
+    pr.size=OBJSIZE;
+    pr.desc="系统快速";
+    if(run_sort(&pr,qsort)){
+        return -1;
+    }
+    memcpy(ary,org,total*OBJSIZE);
+    pr.desc="快速排序";
+    if(run_sort(&pr,quick_sort)){
+        return -1;
+    }
+    memcpy(ary,org,total*OBJSIZE);
+    pr.desc="冒泡排序";
+    if(run_sort(&pr,buble_sort)){
+        return -1;
+    }
+    free(org);
+    free(ary);
+   return 0;
 }

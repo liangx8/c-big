@@ -3,7 +3,7 @@
 #include <malloc.h>
 #include "error_stack.h"
 #define ENTITY_SIZE 12
-int qq_print(void *obj,int64_t seq,const char *);
+void qq_print(void *obj,int64_t seq,const char *);
 int list(const char *fname, int64_t offset, int limit,int highlight)
 {
     FILE *fh = fopen(fname, "rb");
@@ -27,15 +27,15 @@ int list(const char *fname, int64_t offset, int limit,int highlight)
         ERROR_BY_ERRNO();
         goto err_ret;
     }
-    int num = fread(buf, bsize, 1, fh);
-    if (num < 1)
+    int num = fread(buf, ENTITY_SIZE, limit, fh);
+    if (ferror(fh))
     {
         ERROR_BY_ERRNO();
         goto err_ret;
     }
     fclose(fh);
     char *ptr=buf;
-    for (int i = 0; i < limit; i++)
+    for (int i = 0; i < num; i++)
     {
         if(i==highlight){
             qq_print(ptr,offset+i,";31");

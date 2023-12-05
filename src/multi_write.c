@@ -4,6 +4,11 @@
 #include <string.h>
 #include <errno.h>
 
+
+extern int cpunum;
+extern struct timespec NS100;
+
+const char *file_tmp="/tmp/mutiwrite-test.bin";
 struct mt_data{
     FILE *fp;
     pthread_mutex_t *mutex;
@@ -47,21 +52,21 @@ uint16_t get16(FILE *fh)
     return *p;
 }
 #define TASKNUM 16
-void test_multi_write(void)
+void test_mt1(void)
 {
     pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
     run_data.mutex=&mutex;
-    pthread_t pid[TASKNUM];
-    FILE *fp=fopen("/tmp/mutiwrite-test.bin","w+");
+    pthread_t pid[cpunum];
+    FILE *fp=fopen(file_tmp,"w+");
     if(fp == NULL){
         printf("create file error\n");
         return;
     }
     run_data.fp=fp;
-    for(int ix=0;ix<TASKNUM;ix++){
+    for(int ix=0;ix<cpunum;ix++){
         pthread_create(&pid[ix],NULL,task_write,(void *)(long)ix);
     }
-    for(int ix=0;ix<TASKNUM;ix ++){
+    for(int ix=0;ix<cpunum;ix ++){
         pthread_join(pid[ix],NULL);
     }
     rewind(fp);
@@ -76,4 +81,36 @@ void test_multi_write(void)
     }
     printf("test ok\n");
     fclose(fp);
+}
+
+void *task_mw2(void *pl)
+{
+    int id=(int)(long)pl;
+    FILE *fp=fopen(file_tmp,"r+");
+    if(fp==NULL){
+        printf("%d open file error\n",id);
+        return NULL;
+    }
+    fseek(fp,id * 10*2,SEEK_SET);
+    for(int ix=0;ix<10;ix++){
+        write16(fp,id*10+ix);
+        nanosleep(&NS100,NULL);
+    }
+    fclose(fp);
+    return NULL;
+}
+void test_multi_write2(void)
+{
+    pthread_t pid[cpunum];
+    for(int ix=0;ix<cpunum;ix++){
+        pthread_create(&pid[ix],NULL,task_mw2,(void *)(long)ix);
+    }
+    for(int ix=0;ix<cpunum;ix++){
+        pthread_join(pid[ix],NULL);
+    }
+}
+
+void test_multi_write(void)
+{
+    test_multi_write2();
 }

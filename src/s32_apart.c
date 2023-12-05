@@ -28,6 +28,7 @@ const char* JSON_RIGHT_FORM="{\"id\":%1$d,\"type\":\"right\",\"value\":%2$ld},";
 
 extern int int_act; // define in main.c
 extern int cpunum;
+extern struct timespec NS100;
 
 struct run_data{
     FILE *fdst,*fsrc;
@@ -36,7 +37,6 @@ struct run_data{
     int64_t pos_src,pos_left,pos_right;
     uint8_t pivot[UNIT_SIZE];
 } apart_data;
-extern struct timespec NS100;
 void *apart_task(void *obj)
 {
     int id=(long)obj;
@@ -276,6 +276,7 @@ void apart32(struct STATUS *stu)
     }
     free(pid);
     if(has_error()){
+        print_error_stack(stdout);
         return;
     }
     if(apart_data.pos_right - apart_data.pos_left != 1){
@@ -298,12 +299,19 @@ void apart32(struct STATUS *stu)
         stu->scope[2]=apart_data.pos_right;
         stu->step=1;
     }else {
-        stu->scope_cnt=4;
-        stu->scope=malloc(32);
-        stu->scope[0]=0;
-        stu->scope[1]=apart_data.pos_left;
-        stu->scope[2]=apart_data.pos_right;
-        stu->scope[3]=amount;
+        if((amount - apart_data.pos_left) < 3){
+            stu->scope_cnt=2;
+            stu->scope=malloc(16);
+            stu->scope[0]=0;
+            stu->scope[1]=apart_data.pos_left;
+        } else {
+            stu->scope_cnt=4;
+            stu->scope=malloc(32);
+            stu->scope[0]=0;
+            stu->scope[1]=apart_data.pos_left;
+            stu->scope[2]=apart_data.pos_right;
+            stu->scope[3]=amount;
+        }
         stu->step=2;
     }
 }

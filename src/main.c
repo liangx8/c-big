@@ -11,9 +11,12 @@
 //#include "test_item.h"
 
 const char *config_file = "status.json";
-const char *origin = "/home/com/big-data/qq-test.bin";
 
 int cpunum;
+
+
+
+
 
 void apart32(struct STATUS *);
 void sort32(struct STATUS *);
@@ -26,13 +29,12 @@ void mem_sort_test(const char *);
 void unit_test(void); // test_thread.c
 void full_path(char *,const char *);
 void seq_find(const char *fname,unsigned int val,int limit);
-
+void test_signal(void);
 void test_multi_write(void);
-
-void printsizeof(void)
-{
-    printf("short: %ld,int %ld, long %ld, size_t: %ld\n",sizeof(short),sizeof(int),sizeof(long),sizeof(size_t));
-}
+void test_qsort_partition(int64_t p1,int64_t p2);
+void check_dup(const struct STATUS *);
+int same_block(const unsigned char *src,const unsigned char *dst,int len);
+void unit_run(const char *name);
 
 int main(int argc,char *const argv[])
 {
@@ -70,6 +72,9 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     full_path(fns,stu->src);
     stu->preform_dst=fnd;
     stu->preform_src=fns;
+    if(opt.srcname){
+        stu->preform_dst=opt.srcname;
+    }
 
     signal(SIGUSR1, sighandler);
     signal(SIGINT, sighandler);
@@ -84,13 +89,36 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         stu->step1time=0;
     case SORT:
         {
+            u_int8_t *b1,*b2;
+            b1=malloc(720*2);
+            b2=b1 + 720;
             if(stu->step <2 ){
                 status_print(stu);
                 if (now(&tm) == -1)
                 {
                     print_error_stack(stdout);
                 }
+                FILE *fh=fopen(stu->preform_src,"r");
+                if(fh==NULL){
+                    ERROR_BY_ERRNO();
+                    print_error_stack(stdout);
+                    return 0;
+                }
+                fread(b1,12,60,fh);
+                fclose(fh);
                 apart32(stu);
+                fh=fopen(stu->preform_dst,"r");
+                if(fh==NULL){
+                    ERROR_BY_ERRNO();
+                    print_error_stack(stdout);
+                    return 0;
+                }
+                fread(b2,12,60,fh);
+                fclose(fh);
+                if(same_block(b1,b2,60)){
+                    return 0;
+                }
+                free(b1);
                 if(has_error()){
                     print_error_stack(stdout);
                     status_print(stu);
@@ -117,9 +145,8 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
             if(stu->step ==1){
                 printf("第一步被中断\n");
                 return 0;
-            }
+            }*/
             sort32(stu);
-            */
 
         }
         break;
@@ -138,14 +165,13 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
 
         }*/
         {
-            s32_apart_exam(stu);
+            if(sort_test(stu->preform_dst)){
+                print_error_stack(stdout);
+            }
         }
         break;
     case LIST:
     {
-        if(opt.srcname){
-            stu->preform_dst=opt.srcname;
-        }
         if (list(stu->preform_dst, opt.offset, opt.limit,0))
         {
             print_error_stack(stdout);
@@ -155,10 +181,10 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     case UNIT_TEST:
         //test_mutex_lock();
         //test_pair();
-        if(opt.srcname){
-            stu->preform_dst=opt.srcname;
-        }
-        mem_sort_test(stu->preform_dst);
+        //test_multi_write();
+        unit_run(opt.testname);
+        //test_signal();
+        //unit_test();
         break;
     case GEN_TEST:
     {
@@ -166,7 +192,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         if(opt.srcname){
             stu->preform_src=opt.srcname;
         } else {
-            stu->preform_src=origin;
+            stu->preform_src="/home/com/big-data/qq-test.bin";
         }
         stu->preform_dst=fns;
         if (gentestdata(stu->preform_src, stu->preform_dst, opt.offset))
@@ -176,6 +202,8 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     }
     break;
     case GEN_RAND_TEST:
+        apart32(stu);
+        status_save(stu,config_file);
     break;
     case FIND:
         if(opt.limit==0){
@@ -186,6 +214,13 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         }
         seq_find(stu->preform_dst,opt.offset,opt.limit);
     break;
+    case TEST_PART:
+        printf("begin:%ld,end: %ld\n",opt.offset,opt.limit);
+        test_qsort_partition(opt.offset,opt.limit);
+        return 0;
+    case DUPLICATE:
+        check_dup(stu);
+        break;
     default:
         usage(argv[0]);
         return 0;
@@ -199,27 +234,4 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     status_free(stu);
     return 0;
 }
-int int_act;
-void sighandler(int signum)
-{
-    switch (signum)
-    {
-    case SIGUSR1:
-        int_act = SHOW_PROGRESS;
-        break;
-    case SIGINT:
-        int_act = SORTING_BREAK;
-    }
-}
-/**
- * @brief 为了防止程序优化而设计的设值函数
- * @param target 指针
- * @param value 新值
- * @return 旧值
-*/
-int set_int(int *target,int value)
-{
-    int retval=*target;
-    *target=value;
-    return retval;
-}
+

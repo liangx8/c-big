@@ -4,8 +4,9 @@ struct OPTION
 {
     long offset;
     const char *srcname;
+    const char *testname;
     int action;
-    int limit;
+    long limit;
 };
 #define SORT         0
 #define TEST         1
@@ -15,6 +16,8 @@ struct OPTION
 #define UNIT_TEST    5
 #define RESORT       6
 #define GEN_RAND_TEST 7
+#define TEST_PART    8
+#define DUPLICATE    9
 void parse(int argc, char *const argv[], struct OPTION *data);
 void usage(const char*);
 #endif

@@ -25,7 +25,8 @@ int now(long *tm){
     *tm=(ts.tv_sec *NANO_MASK) + ts.tv_nsec;
     return 0;
 }
-const char *fmt_hms="%dday %02d:%02d:%02d %ld";
+const char *fmt_dhms="%dday %02d:%02d:%02d %ld";
+const char *fmt_hms="%02d:%02d:%02d %ld";
 /**
  * @param buf 
 */
@@ -38,9 +39,12 @@ int timestamp_str(char *buf,long tm){
     tm = tm /60 ; // hour
     int hour= tm % 24;
     tm = tm /24;
+    if(tm){
+        return sprintf(buf,fmt_dhms,tm,hour,min,sec,nsec);
+    } else {
+        return sprintf(buf,fmt_hms,hour,min,sec,nsec);
+    }
 
-    int width=sprintf(buf,fmt_hms,tm,hour,min,sec,nsec);
-    return width;
 }
 
 

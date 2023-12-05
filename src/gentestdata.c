@@ -32,9 +32,8 @@ int gentestdata(const char *src,const char *dst,int64_t size)
     printf("生成开发用数据:\n%s => %s (%ld)\n",src,dst,size);
     int64_t sum=0;
     while(1){
-        size_t sz;
+        size_t sz=BUF_SZ /12;
         if(sum < size){
-            sz=BUF_SZ /12;
             if(sz + sum > size){
                 sz=size-sum;
             }

@@ -258,6 +258,90 @@ void unit_test2(void)
     bag_free(mp);
 
 }
+// UNIT TEST 4 pthread_cond_wait 实验
+struct test_data4{
+    pthread_cond_t *cond;
+    pthread_mutex_t *mutex;
+} td4;
+void *test4_child(void *any){
+    int id= (long)any;
+    pthread_mutex_lock(td4.mutex);
+    printf("child %d is locked\n",id);
+    pthread_cond_wait(td4.cond,td4.mutex);
+    pthread_mutex_unlock(td4.mutex);
+    printf("child %d is quit\n",id);
+    return NULL;
+}
+void test_thread_wait(void)
+{
+    pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+    td4.cond=&cond;
+    td4.mutex=&mutex;
+    pthread_t pid[cpunum];
+    for(int ix = 0;ix<cpunum;ix++){
+        pthread_create(&pid[ix],NULL,test4_child,(void *)(long)ix);
+    }
+//    pthread_cond_broadcast(td4.cond);
+    for(int ix=0;ix<cpunum;ix++){
+        sleep(1);
+        pthread_cond_signal(&cond);
+        pthread_join(pid[ix],NULL);
+    }
+
+}
+
+// int64_t qsort_partition(FILE *fh,int64_t pos1,int64_t pos2)
+int64_t qsort_partition(FILE *fh,int64_t pos1,int64_t pos2);
+static inline int load(FILE *hdl,uint8_t *buf,int64_t idx)
+{
+    fseek(hdl,idx * 12,SEEK_SET);
+    if(fread(buf,12,1,hdl)==0){
+        printf("read error\n");
+        return -1;
+    }
+    return 0;
+}
+
+void test_qsort_partition(int64_t p1,int64_t p2)
+{
+    uint8_t pd[12];
+    FILE *fp=fopen("/home/tec/big/qq-sorted.bin","r+");
+    if(fp==NULL){
+        printf("file open error\n");
+        return;
+    }
+    int64_t pidx=qsort_partition(fp,p1,p2);
+    if(load(fp,&pd[0],pidx)){
+        return;
+    }
+    uint32_t pivot= *((uint32_t *)pd);
+    printf("index:%ld QQ:%u\n",pidx,pivot);
+    fseek(fp,p1*12,SEEK_SET);
+    for(int ix=p1;ix<pidx;ix++){
+        if(fread(&pd[0],12,1,fp)==0){
+            printf("file read unexpected\n");
+            return;
+        }
+        uint32_t cur=*((uint32_t *)pd);
+        if(cur >= pivot){
+            printf("test fail\n");
+            return;
+        }
+    }
+    fread(&pd[0],12,1,fp);
+    for(int ix=pidx+1;ix<p2;ix++){
+        if(fread(&pd[0],12,1,fp)==0){
+            printf("file read unexpected\n");
+            return;
+        }
+        uint32_t cur=*((uint32_t *)pd);
+        if(cur < pivot){
+            printf("test fail\n");
+            return;
+        }
+    }
+    printf("Test OK\n");
+}
 void unit_test(void){
-    unit_test2();
 }
