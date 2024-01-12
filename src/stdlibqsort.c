@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "entity.h"
 #define ITOTAL 10
 
 
@@ -25,21 +26,14 @@ int int_test(void)
     return 0;
 }
 unsigned char *randomdata(long total);
-int qq_cmp(const void *,const void *);
-void qq_print(const void *,long ,const char*);
-void test_print_all(const void *ptr)
-{
-    for(int ix=0;ix<ITOTAL;ix++){
-        qq_print(ptr+(ix*12),ix,NULL);
-    }
-}
+
+extern const struct ENTITY qq_entity;
+
+
 int test_qq_qsort()
 {
     unsigned char *buf=randomdata(ITOTAL);
-    test_print_all(buf);
-    qsort(buf,ITOTAL,12,qq_cmp);
-    printf("====================================\n");
-    test_print_all(buf);
+    qsort(buf,ITOTAL,qq_entity.unitsize,qq_entity.cmp);
     free(buf);
     return 0;
 }

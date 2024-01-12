@@ -221,10 +221,10 @@ void sort32(struct STATUS *sta)
     pthread_t *pid;
     sort_data.cond=&cond;
     sort_data.mutex=&mutex;
-    sort_data.working=malloc(8*cpunum*2);
+    sort_data.working=malloc(sizeof(int64_t)*cpunum*2);
 
     char *fn=malloc(256);
-    bzero(sort_data.working,cpunum * 16);
+    bzero(sort_data.working,sizeof(int64_t)*cpunum*2);
 #ifndef NDEBUG
     out=fopen("/home/tec/big.log","w+");
 #endif

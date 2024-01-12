@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <signal.h>
+#include "entity.h"
 #include "status.h"
 #include "options.h"
 #include "error_stack.h"
@@ -15,7 +16,7 @@ const char *config_file = "status.json";
 int cpunum;
 
 
-
+extern const struct ENTITY qq_entity;
 
 
 void apart32(struct STATUS *);
@@ -23,7 +24,7 @@ void sort32(struct STATUS *);
 void s32_apart_exam(struct STATUS *);
 int sort_test(const char *);
 void sighandler(int signum);
-int list(const char *, int64_t , int,int);
+int list(const struct STATUS *, int64_t , int,int);
 int gentestdata(const char *src, const char *dst, int64_t size);
 void mem_sort_test(const char *);
 void unit_test(void); // test_thread.c
@@ -67,7 +68,7 @@ pid:                                  \033[0;31;47m%d\033[0m\n\
 cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpunum);
     stu = status_file_load_or_new(config_file);
     parse(argc, argv, &opt);
-
+    stu->payload=&qq_entity;
     full_path(fnd,stu->dst);
     full_path(fns,stu->src);
     stu->preform_dst=fnd;
@@ -89,36 +90,13 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         stu->step1time=0;
     case SORT:
         {
-            u_int8_t *b1,*b2;
-            b1=malloc(720*2);
-            b2=b1 + 720;
             if(stu->step <2 ){
                 status_print(stu);
                 if (now(&tm) == -1)
                 {
                     print_error_stack(stdout);
                 }
-                FILE *fh=fopen(stu->preform_src,"r");
-                if(fh==NULL){
-                    ERROR_BY_ERRNO();
-                    print_error_stack(stdout);
-                    return 0;
-                }
-                fread(b1,12,60,fh);
-                fclose(fh);
                 apart32(stu);
-                fh=fopen(stu->preform_dst,"r");
-                if(fh==NULL){
-                    ERROR_BY_ERRNO();
-                    print_error_stack(stdout);
-                    return 0;
-                }
-                fread(b2,12,60,fh);
-                fclose(fh);
-                if(same_block(b1,b2,60)){
-                    return 0;
-                }
-                free(b1);
                 if(has_error()){
                     print_error_stack(stdout);
                     status_print(stu);
@@ -134,6 +112,8 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
                     print_error_stack(stdout);
                     return -1;
                 }
+            } else {
+                s32_apart_exam(stu);
             }
             // step1 完成
             // 如果返回不是0也不是-1，就是跳过
@@ -146,7 +126,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
                 printf("第一步被中断\n");
                 return 0;
             }*/
-            sort32(stu);
+            //sort32(stu);
 
         }
         break;
@@ -172,7 +152,8 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         break;
     case LIST:
     {
-        if (list(stu->preform_dst, opt.offset, opt.limit,0))
+        status_print(stu);
+        if (list(stu, opt.offset, opt.limit,0))
         {
             print_error_stack(stdout);
         }

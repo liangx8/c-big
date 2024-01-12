@@ -1,10 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <malloc.h>
+#include "entity.h"
 #include "status.h"
 #include "error_stack.h"
 
-#define UNIT_SIZE 12
-
+#define BUF_CNT 100000
 
 
 #define LOG(m) printf("%s(%d):" m,__FILE__,__LINE__)
@@ -13,60 +14,83 @@ int full_path(char *,const char *);
 void s32_apart_exam(struct STATUS *sta)
 {
     FILE *fh;
-    char val12[UNIT_SIZE];
+    const struct ENTITY *ent=sta->payload;
+    const int us=ent->unitsize;
+    char pivot[ent->unitsize];
     fh=fopen(sta->preform_dst,"r");
     if(fh==NULL){
         ERROR(sta->preform_dst);
         ERROR_BY_ERRNO();
         return;
     }
-    fseek(fh,sta->scope[1]*UNIT_SIZE,SEEK_SET);
-    if(fread(&val12[0],UNIT_SIZE,1,fh)<1){
+    fseek(fh,sta->scope[1]*us,SEEK_SET);
+    if(fread(&pivot[0],us,1,fh)<1){
         ERROR_BY_ERRNO();
         fclose(fh);
-        return;
+        goto exit_with_error;
     }
-    uint32_t pv=*((uint32_t *)val12);
-    printf("value:%u\n",pv);
+    printf("value: \033[0;33m%s\033[0m\n",ent->str(pivot));
+    char *buf=malloc(BUF_CNT * us);
     rewind(fh);
-    int64_t cnt;
-    for(cnt=0;cnt < sta->scope[1];cnt++){
-        uint32_t *ppv;
-        if(feof(fh)){
-            LOG("内部错误！");
-            goto nopass;
+    long num=fread(buf,us,BUF_CNT,fh);
+    long cnt=0;
+    if(num){
+        long idx=0;
+        while(1){
+            if(cnt >= sta->scope[1]){
+                break;
+            }
+            if(ent->cmp(buf+(idx * us),&pivot[0])>=0){
+                goto nopass;
+            }
+            idx ++;
+            cnt++;
+            if(idx == num){
+                if(feof(fh)){
+                    break;
+                }
+                num=fread(buf,us,BUF_CNT,fh);
+                if(num==0){
+                    break;
+                }
+                idx=0;
+            }
         }
-        if(fread(&val12[0],UNIT_SIZE,1,fh)<1){
-            LOG("内部错误！");
-            goto nopass;
-        }
-        ppv = (uint32_t *) val12;
-        if(*ppv >= pv){
-            goto nopass;
-        }
-        
     }
+    fseek(fh,sta->scope[2] * us,SEEK_SET);
+    num=fread(buf,us,BUF_CNT,fh);
+    cnt ++;
+    if(num){
+        long idx=0;
+        while(1)
+        {
+            if(cnt >= sta->scope[3]){
+                break;
+            }
+            if(ent->cmp(buf+(idx * us),&pivot[0]) < 0){
+                goto nopass;
+            }
+            idx++;
+            cnt++;
+            if(idx == num){
+                if(feof(fh)){
+                    break;
+                }
+                num=fread(buf,us,BUF_CNT,fh);
+                if(num==0){
+                    break;
+                }
+                idx=0;
+            }
 
-    cnt++;
-    for(;cnt<sta->scope[3];cnt++){
-        uint32_t *ppv;
-        if(feof(fh)){
-            LOG("内部错误！");
-            goto nopass;
-        }
-        if(fread(&val12[0],UNIT_SIZE,1,fh)<1){
-            LOG("内部错误！");
-            goto nopass;
-        }
-        ppv = (uint32_t *) val12;
-        if(*ppv < pv){
-            goto nopass;
         }
     }
-    printf("数据分区正确\n");
-    fclose(fh);
+    free(buf);
+    printf("数据分区\033[0;33m完成\033[0m\n");
     return;
-nopass:
-    printf("数据没有被排序%ld\n",cnt);
-    fclose(fh);
+    nopass:
+    printf("数据\033[1;36m没有\033[0m排序(%ld)\n",cnt);
+    return;
+    exit_with_error:
+    print_error_stack(stderr);
 }

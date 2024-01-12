@@ -6,7 +6,9 @@
 #include "status.h"
 
 #define PRE(fmt,args...) printf("%s(%3d):" fmt,__FILE__,__LINE__,args)
-
+/**
+ * @brief 比较２过块，不论顺序，每１２个字节是否是相同的uint32_t
+*/
 int same_block(const char *src,const char *dst,int len)
 {
     const char *ps;
@@ -22,7 +24,8 @@ int same_block(const char *src,const char *dst,int len)
         int notfound=1;
         ps += 12;
         for(int iy=0;iy<remain_cnt;iy++){
-            uint32_t *pd=(uint32_t *)(dst + idxes[iy]);
+            uint32_t idx=idxes[iy];
+            uint32_t *pd=(uint32_t *)(dst + idx);
             if(*pd == val){
                 remain_cnt --;
                 if(remain_cnt < 0 ){
@@ -30,7 +33,9 @@ int same_block(const char *src,const char *dst,int len)
                     retval=-1;
                     goto quit;
                 }
+                // 数字已经比较过，保存到数组最后
                 idxes[iy]=idxes[remain_cnt];
+                idxes[remain_cnt]=idx;
                 notfound=0;
                 break;
             }

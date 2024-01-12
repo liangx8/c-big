@@ -13,6 +13,7 @@ struct STATUS
     const char *dst;
     const char *preform_src;
     const char *preform_dst;
+    void       *payload;
     uint64_t   step1time;
     uint64_t   step2time;
     // 准备要处理的分区,快速排序中partition的结果,必须成对出现

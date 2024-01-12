@@ -30,6 +30,8 @@ int test_signed(const void *pl){
     return 0;
 }
 
+
+int test_qq_entity(const void *pl);
 int test_qsort(const void *pl);
 int test_rand(const void *pl);
 const char *const unsorting="/tmp/unsorting.bin";
@@ -39,6 +41,7 @@ const struct test_unit ut_array[]={
     {"random",test_rand,0},
     {"signed",test_signed,0},
     {"qsort",test_qsort,0},
+    {"qq_entity",test_qq_entity,0},
     {0,0,0}
 };
 

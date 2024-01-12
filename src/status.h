@@ -7,6 +7,7 @@ struct STATUS
     const char *dst;
     const char *preform_src;
     const char *preform_dst;
+    const void *payload;
     // 上次用的时间
     unsigned long step1time;
     unsigned long step2time;
