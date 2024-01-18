@@ -23,7 +23,8 @@ void status_free(struct STATUS *);
 int status_save(struct STATUS *, const char *);
 void status_print(struct STATUS *stu);
 
+#define NO_ACTION     0
 #define SHOW_PROGRESS 1
 #define SORTING_BREAK 2
-//#define SORTING_DONE  4
+#define SORTING_DONE  4
 #endif

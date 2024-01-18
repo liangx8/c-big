@@ -19,12 +19,6 @@
 #define DEBUG_LOG(fmt,args...) printf("%s(%3d):" fmt ,__FILE__,__LINE__,args)
 
 
-#ifdef DNUM
-FILE *dout;
-
-const char* JSON_LEFT_FORM="{\"id\":%1$d,\"type\":\"left\",\"value\":%2$ld},";
-const char* JSON_RIGHT_FORM="{\"id\":%1$d,\"type\":\"right\",\"value\":%2$ld},";
-#endif
 
 extern int int_act; // define in main.c
 extern int cpunum;
@@ -56,7 +50,7 @@ void *apart_task(void *obj)
             // if(id==0){
             //     printf("%s %x\n",rd->ent->str(sptr),rd->ent->cmp(sptr,rd->pivot));
             // }
-            if(rd->ent->cmp(sptr,rd->pivot) <0){
+            if(rd->ent->lt(sptr,rd->pivot)){
                 memcpy(bl+(cntl * us),sptr,us);
                 cntl ++;
                 if(cntl == DBUF_CNT){
@@ -101,8 +95,6 @@ void *apart_task(void *obj)
             }
         }
         pthread_mutex_lock(rd->mu_writ);
-        long left=rd->pos_left;
-        long right=rd->pos_right;
         // idx 一定是　0
         if(cntl){
             fseek(rd->fdst,rd->pos_left * us,SEEK_SET);
@@ -123,7 +115,6 @@ void *apart_task(void *obj)
             }
         }
         pthread_mutex_unlock(rd->mu_writ);
-        printf("task %2d (%4d,%4d)(%10ld,%10ld)\n",id,cntl,cntr,left,right);
 
     } else {
         printf("task %2d done nothing\n",id);
@@ -147,6 +138,9 @@ void apart32(struct STATUS *stu)
     int64_t amount;
     pthread_t *pid;
     pthread_mutex_t mu_writ=PTHREAD_MUTEX_INITIALIZER;
+    apart_data.ent=stu->payload;
+    uint8_t pivot[apart_data.ent->unitsize];
+    
 
     fh=fopen(stu->preform_dst,"w+");
     if(fh==NULL){
@@ -156,7 +150,6 @@ void apart32(struct STATUS *stu)
     }
         
     apart_data.fdst=fh;
-    apart_data.ent=stu->payload;
     amount=filesize(stu->preform_src);
     if(amount<0){
         ERROR(stu->preform_dst);
@@ -180,14 +173,13 @@ void apart32(struct STATUS *stu)
     apart_data.fsrc      = fh;
     apart_data.pos_right = amount;
     apart_data.pos_left  = 0;
-    apart_data.pivot=malloc(apart_data.ent->unitsize);
-    if(fread(apart_data.pivot,apart_data.ent->unitsize,1,fh)<1){
+    apart_data.pivot=&pivot[0];
+    if(fread(&pivot[0],apart_data.ent->unitsize,1,fh)<1){
         ERROR_BY_ERRNO();
         return;
     }
     
     printf("pivot value %s, amount:%ld\n",apart_data.ent->str(apart_data.pivot),amount);
-    printf("current: %ld\n",ftell(fh));
     apart_data.mu_writ   = &mu_writ;
     pid=malloc(sizeof(pthread_t)*(cpunum-1));
 
@@ -214,7 +206,6 @@ void apart32(struct STATUS *stu)
     }
     fclose(apart_data.fdst);
     fclose(apart_data.fsrc);
-    free(apart_data.pivot);
 
     stu->scope_cnt=4;
     stu->scope=malloc(32);

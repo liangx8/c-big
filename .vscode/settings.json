@@ -19,6 +19,7 @@
         "pairs.h": "c",
         "stdio.h": "c",
         "cstring": "c",
-        "variant": "c"
+        "variant": "c",
+        "bag.h": "c"
     }
 }

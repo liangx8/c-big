@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/big",
-            "args": ["-b"],
+            "args": ["-t","1,2"],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],

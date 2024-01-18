@@ -17,13 +17,17 @@ struct qq_ent
 #pragma pack(pop)
 int qq_cmp(const uint32_t *qq1, const uint32_t *qq2)
 {
-    if(*qq1 > *qq2) {
-        return 1;
-    } 
     if(*qq1 == *qq2){
         return 0;
     }
+    if(*qq1 > *qq2) {
+        return 1;
+    } 
     return -1;
+}
+int qq_lt(const uint32_t *qq1,const uint32_t *qq2)
+{
+    return *qq1 < *qq2;
 }
 /**
  * 
@@ -34,8 +38,15 @@ const char * qq_str(const void *obj)
     snprintf(print_str,PRINT_WIDTH,"%11u:%11lu",qq->qq,qq->ph);
     return print_str;
 }
-
-const struct ENTITY qq_entity={(int (*)(const void *,const void *))qq_cmp,qq_str,12};
+uint32_t qq_value(const struct qq_ent *ent)
+{
+    return ent->qq;
+}
+const struct ENTITY qq_entity={
+    (int (*)(const void *,const void *))qq_cmp,
+    (int (*)(const void *,const void *))qq_lt,
+    qq_str,
+    12};
 
 
 int test_qq_entity(void *pl)

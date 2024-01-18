@@ -9,88 +9,76 @@
 
 
 #define LOG(m) printf("%s(%d):" m,__FILE__,__LINE__)
-
-int full_path(char *,const char *);
+/**
+ * @brief 检测分区
+ * @param fh    被检查的文件句柄
+ * @param scope 4个数的数组，[0]左边界[1]分界点[3]右边界
+ * @param ent   ...
+ **/
+int apart_exam(FILE *fh,long *scope,const struct ENTITY *ent)
+{
+    const int us=ent->unitsize;
+    char pivot[us];
+    char current[us];
+    long pos1=scope[0];
+    long pos2=scope[3];
+    long mid=scope[1];
+    fseek(fh,mid * us,SEEK_SET);
+    if(fread(&pivot[0],us,1,fh)<1){
+        ERROR_BY_ERRNO();
+        return -1;
+    }
+    printf("value: \033[0;33m%s\033[0m\n",ent->str(pivot));
+    fseek(fh,pos1 * us,SEEK_SET);
+    long cnt=0;
+    while(1){
+        if(fread(&current[0],us,1,fh)<1){
+            ERROR_BY_ERRNO();
+            return -1;
+        }
+        if(ent->cmp(current,pivot)>=0){
+            ERROR("数据不正确1");
+            return -1;
+        }
+        cnt ++;
+        if(cnt == mid){
+            break;
+        }
+    }
+    cnt++;
+    if(fread(&current[0],us,1,fh)<1){
+        ERROR_BY_ERRNO();
+        return -1;
+    }
+    while(1){
+        if(fread(&current[0],us,1,fh)<1){
+            ERROR_BY_ERRNO();
+            return -1;
+        }
+        if(ent->cmp(current,pivot)<0){
+            ERROR("数据不正确2");
+            return -1;
+        }
+        cnt ++;
+        if(cnt == pos2){
+            break;
+        }
+    }
+    return 0;
+}
 void s32_apart_exam(struct STATUS *sta)
 {
     FILE *fh;
     const struct ENTITY *ent=sta->payload;
-    const int us=ent->unitsize;
-    char pivot[ent->unitsize];
     fh=fopen(sta->preform_dst,"r");
     if(fh==NULL){
         ERROR(sta->preform_dst);
         ERROR_BY_ERRNO();
         return;
     }
-    fseek(fh,sta->scope[1]*us,SEEK_SET);
-    if(fread(&pivot[0],us,1,fh)<1){
-        ERROR_BY_ERRNO();
-        fclose(fh);
-        goto exit_with_error;
+    if(apart_exam(fh,sta->scope,ent)){
+        print_error_stack(stderr);
+        return;
     }
-    printf("value: \033[0;33m%s\033[0m\n",ent->str(pivot));
-    char *buf=malloc(BUF_CNT * us);
-    rewind(fh);
-    long num=fread(buf,us,BUF_CNT,fh);
-    long cnt=0;
-    if(num){
-        long idx=0;
-        while(1){
-            if(cnt >= sta->scope[1]){
-                break;
-            }
-            if(ent->cmp(buf+(idx * us),&pivot[0])>=0){
-                goto nopass;
-            }
-            idx ++;
-            cnt++;
-            if(idx == num){
-                if(feof(fh)){
-                    break;
-                }
-                num=fread(buf,us,BUF_CNT,fh);
-                if(num==0){
-                    break;
-                }
-                idx=0;
-            }
-        }
-    }
-    fseek(fh,sta->scope[2] * us,SEEK_SET);
-    num=fread(buf,us,BUF_CNT,fh);
-    cnt ++;
-    if(num){
-        long idx=0;
-        while(1)
-        {
-            if(cnt >= sta->scope[3]){
-                break;
-            }
-            if(ent->cmp(buf+(idx * us),&pivot[0]) < 0){
-                goto nopass;
-            }
-            idx++;
-            cnt++;
-            if(idx == num){
-                if(feof(fh)){
-                    break;
-                }
-                num=fread(buf,us,BUF_CNT,fh);
-                if(num==0){
-                    break;
-                }
-                idx=0;
-            }
-
-        }
-    }
-    free(buf);
-    printf("数据分区\033[0;33m完成\033[0m\n");
-    return;
-    nopass:
-    printf("数据\033[1;36m没有\033[0m排序(%ld)\n",cnt);
-    return;
-    exit_with_error:
-    print_error_stack(stderr);
+    printf("数据准确分区\n");
 }

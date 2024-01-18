@@ -92,7 +92,9 @@ int bag_print(struct Bag *ps,FILE *out,int limit)
         if(ix *2 +1 >= ps->idx){
             break;
         }
-        fprintf(out,"[%10ld,%10ld]\n",ps->data[ix*2],ps->data[ix*2+1]);
+        int64_t d1=ps->data[ix*2];
+        int64_t d2=ps->data[ix*2+1];
+        fprintf(out,"[%10ld,%10ld] %10ld\n",d1,d2, d2-d1);
     }
     if(limit * 2 < ps->idx){
         fprintf(out,"...\n");

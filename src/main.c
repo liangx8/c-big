@@ -22,20 +22,19 @@ extern const struct ENTITY qq_entity;
 void apart32(struct STATUS *);
 void sort32(struct STATUS *);
 void s32_apart_exam(struct STATUS *);
-int sort_test(const char *);
+int is_sorted(FILE *fh,long offset,long total,const struct ENTITY *ent);
 void sighandler(int signum);
 int list(const struct STATUS *, int64_t , int,int);
 int gentestdata(const char *src, const char *dst, int64_t size);
 void mem_sort_test(const char *);
 void unit_test(void); // test_thread.c
 void full_path(char *,const char *);
-void seq_find(const char *fname,unsigned int val,int limit);
+void seq_find(const struct STATUS *,unsigned int val,int limit);
 void test_signal(void);
 void test_multi_write(void);
-void test_qsort_partition(int64_t p1,int64_t p2);
-void check_dup(const struct STATUS *);
 int same_block(const unsigned char *src,const unsigned char *dst,int len);
 void unit_run(const char *name);
+long filesize(const char *);
 
 int main(int argc,char *const argv[])
 {
@@ -79,6 +78,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
 
     signal(SIGUSR1, sighandler);
     signal(SIGINT, sighandler);
+    signal(SIGUSR2,sighandler);
 
     switch (opt.action)
     {
@@ -112,11 +112,11 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
                     print_error_stack(stdout);
                     return -1;
                 }
-            } else {
                 s32_apart_exam(stu);
             }
             // step1 完成
             // 如果返回不是0也不是-1，就是跳过
+            sort32(stu);
             status_print(stu);
 #ifdef DNUM
             seq_find(stu->preform_dst,DNUM,10);
@@ -130,23 +130,28 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
 
         }
         break;
-    case TEST:
-        // test_thread();
-        // status_print(stu);
-        // if(status_save(&stu,config_file)){
-        //     print_error_stack(stdout);
-        // }
-        /*
+    case IS_SORTED:
+//int is_sorted(FILE *fh,long offset,long total,const struct ENTITY *ent);
         {
-            int64_t scope[]={1,2,3,4,5,6,7,8,9,10};
-            stu->scope=scope;
-            stu->scope_cnt=10;
-            status_save(stu,config_file);
-
-        }*/
-        {
-            if(sort_test(stu->preform_dst)){
-                print_error_stack(stdout);
+            long total;
+            
+            if(opt.limit < 0){
+                total=filesize(stu->preform_dst)/qq_entity.unitsize;
+            } else {
+                total=opt.limit;
+            }
+            printf("检测数据%s(%ld,%ld)...\n",stu->preform_dst,opt.offset,opt.offset+total);
+            FILE *fh=fopen(stu->preform_dst,"r");
+            if(fh==NULL){
+                ERROR_BY_ERRNO();
+            } else {
+                is_sorted(fh,opt.offset,total,stu->payload);
+                fclose(fh);
+            }
+            if(has_error()){
+                print_error_stack(stderr);
+            } else {
+                printf("数据库已经排序\n");
             }
         }
         break;
@@ -193,15 +198,8 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         if(opt.srcname){
             stu->preform_dst=opt.srcname;
         }
-        seq_find(stu->preform_dst,opt.offset,opt.limit);
+        seq_find(stu,opt.offset,opt.limit);
     break;
-    case TEST_PART:
-        printf("begin:%ld,end: %ld\n",opt.offset,opt.limit);
-        test_qsort_partition(opt.offset,opt.limit);
-        return 0;
-    case DUPLICATE:
-        check_dup(stu);
-        break;
     default:
         usage(argv[0]);
         return 0;

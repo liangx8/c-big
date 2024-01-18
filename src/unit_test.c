@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include "error_stack.h"
+#include "entity.h"
 
 
 struct test_unit{
@@ -30,18 +32,19 @@ int test_signed(const void *pl){
     return 0;
 }
 
+extern const struct ENTITY qq_entity;
 
 int test_qq_entity(const void *pl);
-int test_qsort(const void *pl);
 int test_rand(const void *pl);
 const char *const unsorting="/tmp/unsorting.bin";
 int mem_sort_test(const void*); // memsort_test.c
+int test_qsort_partition(const void *);
 const struct test_unit ut_array[]={
-    {"mem_sort",mem_sort_test,(void *)300000},
+    {"mem_sort",mem_sort_test,(void *)100000},
     {"random",test_rand,0},
     {"signed",test_signed,0},
-    {"qsort",test_qsort,0},
     {"qq_entity",test_qq_entity,0},
+    {"qsort_part",test_qsort_partition,&qq_entity},
     {0,0,0}
 };
 
@@ -66,6 +69,7 @@ void unit_run(const char *name)
         }
         if(ut_array[ix].test(ut_array[ix].payload)){
             printf("run test %s \033[0;31mfailure\033[0m\n",ut_array[ix].name);
+            print_error_stack(stderr);
         } else {
             printf("run test %s \033[0;35msuccess\033[0m\n",ut_array[ix].name);
         }

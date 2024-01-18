@@ -5,318 +5,314 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <stdlib.h>
+//#include <time.h>
 
+#include "entity.h"
 #include "status.h"
 #include "error_stack.h"
 #include "bag.h"
 
-typedef int (*itcmp)(const void *,const void *);
 
 #ifdef NDEBUG
 #define PRE(m) while(1==2)
 #else
 #define PRE(fmt,args...) printf("%s(%3d):" fmt,__FILE__,__LINE__,args)
 #endif
-#define CACHE_AMOUNT 524288
-#define MLOCK(mut)      if(pthread_mutex_lock(mut)) {ERROR("线程锁错误\n");int_act=SORTING_BREAK;goto finish;}
-#define MUNLOCK(mut)    if(pthread_mutex_unlock(mut)) {ERROR("线程解锁错误\n");int_act=SORTING_BREAK;goto finish;}
-#define MWAIT(cnd,mut)  if(pthread_cond_wait(cnd,mut)){ERROR("ptread_cond_wait() 错误\n");int_act=SORTING_BREAK;goto finish;}
-#define MBOARDCAST(cnd) if(pthread_cond_broadcast(cnd)){ERROR("pthread_cond_broadcast() 错误\n");int_act=SORTING_BREAK;goto finish;}
-#define MSIGNAL(cnd)    if(pthread_cond_signal(cnd)){ERROR("pthread_cond_signal() 错误\n");int_act=SORTING_BREAK;goto finish;}
+#define MLOCK(mut,ret)      if(pthread_mutex_lock(mut)) {ERROR("线程锁错误\n");ret;}
+#define MUNLOCK(mut,ret)    if(pthread_mutex_unlock(mut)) {ERROR("线程解锁错误\n");ret;}
+#define MWAIT(cnd,mut)  if(pthread_cond_wait(cnd,mut)){ERROR("ptread_cond_wait() 错误\n");goto finish;}
+//#define MBOARDCAST(cnd,ret) 
+#define MSIGNAL(cnd)    if(pthread_cond_signal(cnd)){ERROR("pthread_cond_signal() 错误\n");goto finish;}
 
-#define OBJSIZE 12
+#define MEM_SORT_SIZE  5120
 
 struct run_data{
-    struct Bag *jobs;
-    pthread_mutex_t *mutex;
-    pthread_cond_t *cond;
-    const char *fname;
+    struct Bag              *jobs;
+    pthread_mutex_t         *mutex;
+    pthread_cond_t          *cond;
+    const struct ENTITY     *ent;
+    const char              *fname;
     // 处于活动状态的工作的数量
-    int64_t *working;
+    int64_t                 *working;
+    int                     running;
 }sort_data;
 extern int cpunum;
 
-
-void detail(void)
-{
-    struct run_data *sd=&sort_data;
-    printf("-------------------------------------------\n");
-    bag_print(sd->jobs,stdout,4);
-    for(int ix=0;ix<cpunum;ix++){
-        printf("id:%2d %10ld,%10ld\n",ix,sd->working[ix*2],sd->working[ix*2+1]);
-    }
-}
 int int_act;
 void sighandler(int signum)
 {
-    switch (signum)
-    {
-    case SIGUSR1:
-        int_act=99;
+    int_act=signum;
+    switch(signum){
+        case SIGUSR1:
+        int_act=SHOW_PROGRESS;
         break;
-    case SIGINT:
-        int_act = SORTING_BREAK;
+        case SIGINT:
+        int_act=SORTING_BREAK;
+        break;
     }
 }
-
-void quick_sort(uint8_t *,size_t ,size_t ,itcmp);
-int qq_cmp(const void *,const void *);
-
-static inline int load(FILE *hdl,uint8_t *buf,int64_t idx)
+int load4(FILE *fh,int64_t pos,uint8_t *buf,const struct ENTITY *ent)
 {
-    fseek(hdl,idx * OBJSIZE,SEEK_SET);
-    fread(buf,OBJSIZE,1,hdl);
-    if(ferror(hdl)){
+    if(fseek(fh,pos * ent->unitsize,SEEK_SET)){
+        ERROR_BY_ERRNO();
+        return -1;
+    }
+    if(fread(buf,ent->unitsize,1,fh)<1){
         ERROR_BY_ERRNO();
         return -1;
     }
     return 0;
 }
-static inline int save(FILE *hdl,uint8_t *buf,int64_t idx)
+int save2(FILE *fh,int64_t pos,uint8_t *buf, const struct ENTITY *ent)
 {
-    fseek(hdl,idx * OBJSIZE,SEEK_SET);
-    fwrite(buf,OBJSIZE,1,hdl);
-    if(ferror(hdl)){
-        ERROR_BY_ERRNO();
+    fseek(fh,pos * ent->unitsize,SEEK_SET);
+    if(fwrite(buf,ent->unitsize,1,fh)<1){
         return -1;
     }
     return 0;
 }
-#ifndef NDEBUG
-FILE *out;
-
-int same_block(const uint8_t *src,const uint8_t *dst,int len);
-#endif
-int64_t qsort_partition(FILE *fh,int64_t pos1,int64_t pos2){
-    uint8_t pivot[OBJSIZE];
-    uint8_t store[OBJSIZE];
-
-    if(load(fh,pivot,pos2-1)){
-        return -1;
-    }
+uint32_t value(const void *src){
+    uint32_t *pi= (uint32_t *)src;
+    return *pi;
+}
+int64_t qsort_partition(FILE *fh,int64_t pos1,int64_t pos2,const struct ENTITY *ent){
+    const int us=ent->unitsize;
+    uint8_t *pivot=malloc(us*3);
+    uint8_t *store=pivot + us;
+    uint8_t *oix=store+us;
     int64_t store_idx=pos1;
+    if(load4(fh,pos2-1,pivot,ent)){
+        ERROR("读文件错误");
+        goto exit_with_error;
+    }
     while(1){
         if(store_idx==pos2-1){
+            free(pivot);
             return store_idx;
         }
-        if(load(fh,store,store_idx)){
-            return -1;
+        if(load4(fh,store_idx,store,ent)){
+            ERROR("读文件错误");
+            goto exit_with_error;
         }
-        if(qq_cmp(store,pivot)>0){
+        if(ent->lt(store,pivot)){
             store_idx++;
         } else {
             break;
         }
     }
     for(int64_t ix=store_idx+1;ix<pos2-1;ix++){
-        uint8_t oix[OBJSIZE];
-        if(load(fh,oix,ix)){
-            return -1;
+        if(load4(fh,ix,oix,ent)){
+            ERROR("读文件错误");
+            goto exit_with_error;
         }
-        if(qq_cmp(oix,pivot)>0){
-            if(save(fh,oix,store_idx)){
-                return -1;
+        if(ent->lt(oix,pivot)){
+            if(save2(fh,store_idx,oix,ent)){
+                ERROR("写文件错误");
+                goto exit_with_error;
             }
-            if(save(fh,store,ix)){
-                return -1;
+            if(save2(fh,ix,store,ent)){
+                ERROR("写文件错误");
+                goto exit_with_error;
             }
             store_idx++;
-            if(load(fh,store,store_idx)){
-                return -1;
+            if(load4(fh,store_idx,store,ent)){
+                ERROR("读文件错误");
+                goto exit_with_error;
             }
 
         }
     }
-    if(save(fh,store,pos2-1)){
-        ERROR_BY_ERRNO();
-        return -1;
+    if(save2(fh,pos2-1,store,ent)){
+        ERROR("写文件错误");
+        goto exit_with_error;
     }
-    if(save(fh,pivot,store_idx)){
-        ERROR_BY_ERRNO();
-        return -1;
+    if(save2(fh,store_idx,pivot,ent)){
+        ERROR("写文件错误");
+        goto exit_with_error;
     }
+    free(pivot);
     return store_idx;
+exit_with_error:
+    free(pivot);
+    return -1;
+
 }
-void qq_fprint(FILE*,void *,int64_t ,const char *);
+
+int mem_sort(FILE *fh,int64_t pos,int64_t amount,char *buf,const struct ENTITY *ent)
+{
+    const int us=ent->unitsize;
+    fseek(fh,pos * us,SEEK_SET);
+    int64_t total=fread(buf,us,amount,fh);
+    if(total != amount ){
+        ERROR("内部错误");
+        return -1;
+    }
+    qsort(buf,total,us,ent->cmp);
+    fseek(fh,pos * us,SEEK_SET);
+    total=fwrite(buf,us,total,fh);
+    if(total != amount){
+        ERROR("内部错误");
+        return -1;
+    }
+    return 0;
+}
+void show_detail(struct run_data *rd)
+{
+    while(rd->running){
+//        MWAIT(rd->cond,rd->mutex)
+        pause();
+        if(int_act==SORTING_BREAK){
+            rd->running=0;
+        }
+        if(int_act==SHOW_PROGRESS){
+            printf("=========================================\n");
+            for(int ix=0;ix<cpunum;ix++){
+                if(rd->working[ix*2+1]){
+                    int64_t d1=rd->working[ix*2];
+                    int64_t d2=rd->working[ix*2+1];
+                    PRE("id:%2d work on (%10ld,%10ld) %10ld\n",ix,d1,d2,d2-d1);
+                }
+            }
+            bag_print(rd->jobs,stdout,8);
+        }
+        //MSIGNAL(rd->cond)
+    }
+}
+//extern struct timespec NS100;
 void *sort32_task(void *obj)
 {
     int id=(long)obj;
     struct run_data *sd=&sort_data;
-    long pd[2];
-
-    FILE *fh;
-    fh=fopen(sd->fname,"r+");
-    if (fh==NULL)
-    {
-        ERROR(sd->fname);
+    int64_t scope[2];
+    FILE *fh=fopen(sd->fname,"r+");
+    char *mem_buf=malloc(MEM_SORT_SIZE*sd->ent->unitsize);
+    if(fh==NULL){
         ERROR_BY_ERRNO();
-        int_act=SORTING_BREAK;
-        return NULL;
+        return (void *)-1;
     }
-    while(1){
-        MLOCK(sd->mutex)
-        sd->working[id*2]=0;
-        sd->working[id*2+1]=0;
-        if(bag_get(sd->jobs,&pd[0])==EMPTY){
-            int all_zero=1;
-            for(int ix=0;ix<cpunum*2;ix++){
-                if(sd->working[ix]){
-                    all_zero=0;
+    MLOCK(sd->mutex,goto finish)
+    while(sd->running)
+    {
+        if(bag_get(sd->jobs,&scope[0])){
+            // 工作队列无内容
+            // 检测其他任务是否正在工作
+            int done=1;
+            sd->working[id*2]=0;
+            sd->working[id*2+1]=0;
+            for(int ix=0;ix<cpunum;ix++){
+                if(ix==id)continue;
+                // 右边界为０，意味任务进入idle
+                if(sd->working[ix*2+1]){
+                    done=0;
                     break;
                 }
             }
-            if(all_zero){
-                // 全部线程停止，已经没有任务。排序结束
-                MBOARDCAST(sd->cond)
-                MUNLOCK(sd->mutex)
+            if(done){
+                // 所有任务都停止了
+                sd->running=0;
+                break;
+            } else {
+                // 等待其他的线程出结果
+                MWAIT(sd->cond,sd->mutex)
+            }
+        } else {
+            // 工作队列有内容
+            sd->working[id*2]=scope[0];
+            sd->working[id*2+1]=scope[1];
+            MUNLOCK(sd->mutex,goto finish)
+            int64_t pivot=qsort_partition(fh,scope[0],scope[1],sd->ent);
+            if(pivot < 0){
                 goto finish;
             }
-            MWAIT(sd->cond,sd->mutex)
-            MUNLOCK(sd->mutex)
-            continue;
-        }
-#ifndef NDEBUG
-        fprintf(out,"(%4ld,%4ld)\n",pd[0],pd[1]);
-#endif
-        sd->working[id*2]=pd[0];
-        sd->working[id*2+1]=pd[1];
-        MUNLOCK(sd->mutex)
-        // 线程业务开始
-        
-        int64_t pidx=qsort_partition(fh,pd[0],pd[1]);
-        if(pidx<0){
-            int_act=SORTING_BREAK;
-            PRE("id: %d,出错了",id);
-            goto finish;
-        }
-
-        if(pidx-pd[0]>1){
-        //if(pd[0]<(pidx-1)){
-            MLOCK(sd->mutex)
-            bag_put2(sd->jobs,pd[0],pidx);
-            MSIGNAL(sd->cond);
-            MUNLOCK(sd->mutex)
-        }
-        if(pd[1]-pidx>2){
-        //if(pidx<(pd[1]-2)){
-            MLOCK(sd->mutex)
-            bag_put2(sd->jobs,pidx+1,pd[1]);
-            MSIGNAL(sd->cond);
-            MUNLOCK(sd->mutex)
+            int64_t sco=pivot-scope[0];
+            if(sco > 1){
+                // 有效边界
+                if(sco < MEM_SORT_SIZE){
+                    // 用内存排序
+                    if(mem_sort(fh,scope[0],sco,mem_buf,sd->ent)){
+                        goto finish;
+                    }
+                } else {
+                    MLOCK(sd->mutex,goto finish)
+                    bag_put2(sd->jobs,scope[0],pivot);
+                    MSIGNAL(sd->cond)
+                    MUNLOCK(sd->mutex,goto finish)
+                }
+            }
+            sco = scope[1]-pivot;
+            if(sco > 1){
+                if(sco < MEM_SORT_SIZE){
+                    if(mem_sort(fh,pivot,sco,mem_buf,sd->ent)){
+                        goto finish;
+                    }
+                    MLOCK(sd->mutex,goto finish)
+                } else {
+                    MLOCK(sd->mutex,goto finish)
+                    MSIGNAL(sd->cond)
+                    bag_put2(sd->jobs,pivot,scope[1]);
+                }
+            }
         }
     }
-finish:
+    MSIGNAL(sd->cond)
+    MUNLOCK(sd->mutex,goto finish)
+    //sd->working[id]=0;
+    free(mem_buf);
     fclose(fh);
-    printf("id %d is quit!\n",id);
-    sd->working[id*2]=0;
-    sd->working[id*2+1]=0;
-
+    if(int_act == SORTING_BREAK){
+        PRE("task %2d is broken by user\n",id);
+    } else {
+        PRE("task %2d is done\n",id);
+    }
     return NULL;
+finish:
+    sd->running=0;
+    MSIGNAL(sd->cond)
+    MUNLOCK(sd->mutex,goto finish)
+    if(pthread_cond_broadcast(sd->cond))
+    {
+        ERROR("pthread_cond_broadcast() 错误\n");
+    }
+    free(mem_buf);
+    fclose(fh);
+    return (void *)-1;
 }
-int full_path(char *,const char *);
 void sort32(struct STATUS *sta)
 {
     pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
-    pthread_t *pid;
+    pthread_t *thid;
+    uint8_t *bytes;
+    void *res;
     sort_data.cond=&cond;
     sort_data.mutex=&mutex;
-    sort_data.working=malloc(sizeof(int64_t)*cpunum*2);
-
-    char *fn=malloc(256);
-    bzero(sort_data.working,sizeof(int64_t)*cpunum*2);
-#ifndef NDEBUG
-    out=fopen("/home/tec/big.log","w+");
-#endif
-    full_path(fn,sta->dst);
-    sort_data.fname=fn;
+    bytes=malloc(16*cpunum+sizeof(pthread_t) * cpunum);
+    // working 占用2个64位的数据
+    sort_data.working=(int64_t *)bytes;
+    thid=(pthread_t *)(bytes+16*cpunum);
+    bzero(sort_data.working,16*cpunum);
+    sort_data.ent=sta->payload;
+    sort_data.fname=sta->preform_dst;
     sort_data.jobs=bag_with_array(sta->scope,sta->scope_cnt);
-    pid=malloc(sizeof(pthread_t)*cpunum);
+    sort_data.running=1;
     for(int ix=0;ix<cpunum;ix++){
-        pthread_create(pid+ix,NULL,sort32_task,(void *)(uint64_t)ix);
+        pthread_create(thid + ix,NULL,sort32_task,(void *)(long) ix);
+        printf("id:%2d=>%ld\n",ix,*(thid+ix));
     }
-    while(1){
-        pause();
-        if(int_act==SHOW_PROGRESS){
-        }
-        if(int_act==SORTING_BREAK){
-            break;
+    show_detail(&sort_data);
+    for(int ix=0;ix<cpunum;ix++){
+        pthread_join(*(thid+ix),&res);
+        if(res){
+            printf("return error on id %2d\n",ix);
         }
     }
     if(has_error()){
-        print_error_stack(stdout);
+        print_error_stack(stderr);
+    }else {
+        // break or done
     }
-    for(int ix=0;ix<cpunum;ix++){
-        pthread_join(*(pid+ix),NULL);
-    }
-    free(fn);
-    free(pid);
-    free(sort_data.working);
-#ifndef NDEBUG
-    fclose(out);
-#endif
-    return;
-}
-#define BUFSIZE 1024 * 1024
-#define OBJSIZE 12
-int sort_test(const char *fname)
-{
-    FILE *fh=fopen(fname,"r");
-    if(fh==NULL){
-        ERROR_BY_ERRNO();
-        return -1;
-    }
-    printf("测试文件%s\n",fname);
-    uint8_t *buf=malloc(BUFSIZE * OBJSIZE);
-    size_t offset=0;
-    while(1){
-        size_t cnt=fread(buf,OBJSIZE,BUFSIZE,fh);
-        for(size_t ix=0;ix<cnt-1;ix++){
-            offset ++;
-            if(qq_cmp(buf+(ix+1)*OBJSIZE,buf+ix*OBJSIZE)>0){
-                printf("数据没有排序(偏移:%ld)\n",offset);
-                free(buf);
-                fclose(fh);
-                return 0;
-            }
-        }
-        if(cnt < BUFSIZE){
-            break;
-        }
-        fseek(fh,-OBJSIZE,SEEK_CUR);
-    }
-    printf("data is in order\n");
-    free(buf);
-    fclose(fh);
-    return 0;
-}
-
-
-void *test_task(void *x)
-{
-    printf("pid:%d\n",getpid());
-    for(int i=0;i<10;i++){
-        sleep(1);
-        printf("%d ",i);
-        fflush(stdout);
-    }
-    kill(getpid(),SIGINT);
-    return NULL;
-}
-void test_signal(void){
-    pthread_t id;
-    pthread_create(&id,NULL,test_task,NULL);
-    while(1){
-        pause();
-        if(int_act == SHOW_PROGRESS){
-            printf("show progress\n");
-        }
-        if(int_act== SORTING_BREAK){
-            printf("中断了\n");
-            break;
-        }
-    }
-    pthread_join(id,NULL);
+    free(bytes);
 }
 
 

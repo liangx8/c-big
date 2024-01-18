@@ -9,7 +9,7 @@ struct OPTION
     long limit;
 };
 #define SORT         0
-#define TEST         1
+#define IS_SORTED    1
 #define LIST         2
 #define FIND         3
 #define GEN_TEST     4

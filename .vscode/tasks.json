@@ -14,8 +14,18 @@
                 "isDefault": true,
                 "kind": "build"
             },
-            // Use the standard MS compiler pattern to detect errors, warnings and infos
             "problemMatcher": "$gcc"
+        },
+        {
+            "label": "debug-build",
+            "type": "shell",
+            "command": "make",
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
+            "args": ["OPTS=-g"],
+            "dependsOn":"clean",
+            "problemMatcher":"$gcc"
         },
         {
             "label": "clean",
