@@ -2,14 +2,17 @@
 #include <stdint.h>
 #include <malloc.h>
 #include <string.h>
+#include "entity.h"
 #include "error_stack.h"
 #include "bag.h"
 extern int int_act;
 /*冒泡排序*/
-void buble_sort(uint8_t *buf,size_t cnt,size_t increment,int (*cmp)(const void *,const void*))
+void buble_sort(uint8_t *buf,size_t left,size_t right,const struct ENTITY *ent)
 {
+    const int increment=ent->unitsize;
     uint8_t save[increment];
-    for(size_t ix=0;ix<cnt;ix++){
+    size_t cnt=right-left;
+    for(size_t ix=left;ix<cnt;ix++){
         int touch=0;
         size_t update=0;
         uint8_t *ptr=buf+ix*increment;
@@ -17,7 +20,7 @@ void buble_sort(uint8_t *buf,size_t cnt,size_t increment,int (*cmp)(const void *
 
         for(size_t iy=ix+1;iy<cnt;iy++){
             uint8_t *src=buf+iy*increment;
-            if(cmp(ptr,src)>0){
+            if(ent->cmp(ptr,src)>0){
                 memcpy(ptr,src,increment);
                 touch=1;
                 update=iy;
@@ -35,8 +38,9 @@ void buble_sort(uint8_t *buf,size_t cnt,size_t increment,int (*cmp)(const void *
 }
 /* 快速排序 
 */
-int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*cmp)(const void *,const void*))
+int64_t qpart(uint8_t *mtr,int64_t pos1,int64_t pos2,const struct ENTITY *ent)
 {
+    const int increment=ent->unitsize;
     uint8_t pivot[increment];
     uint8_t store[increment];
     uint8_t *pstore;
@@ -46,7 +50,7 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*cmp)(co
         if(store_idx == pos2-1){
             return store_idx;
         }
-        if(cmp(mtr+store_idx*increment,pivot)<0){
+        if(ent->cmp(mtr+store_idx*increment,pivot)<0){
             store_idx++;
         } else {
             break;
@@ -56,7 +60,7 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*cmp)(co
     memcpy(store,pstore,increment);
     for(int64_t ix=store_idx+1;ix<pos2-1;ix++){
         uint8_t *pix=mtr+ix*increment;
-        if(cmp(pix,pivot)<0){
+        if(ent->cmp(pix,pivot)<0){
 
             memcpy(pstore,pix,increment);
             memcpy(pix,store,increment);
@@ -70,16 +74,16 @@ int64_t qpart(uint8_t *mtr,int increment,int64_t pos1,int64_t pos2,int (*cmp)(co
     return store_idx;
 }
 
-void quick_sort(uint8_t *mtr,size_t total,size_t increment,int (*lt)(const void *,const void*))
+void quick_sort(uint8_t *mtr,size_t left,size_t right,const struct ENTITY *ent)
 {
     struct Bag *cot=bag_create();
-    if(bag_put2(cot,0,total)){
+    if(bag_put2(cot,left,right)){
         ERROR("内部错误:struct Bag空间不够");
         return;
     }
     int64_t scope[2];
     while(bag_get(cot,&scope[0])==0){
-        int64_t mid=qpart(mtr,increment,scope[0],scope[1],lt);
+        int64_t mid=qpart(mtr,scope[0],scope[1],ent);
         int64_t sc0=scope[0];
         int64_t sc1=scope[1];
         if(mid-sc0>1){

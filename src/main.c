@@ -37,6 +37,8 @@ int same_block(const unsigned char *src,const unsigned char *dst,int len);
 void unit_run(const char *name);
 long filesize(const char *);
 int makedata(const char *dst,int64_t size);
+off_t bfind(const char *dst,unsigned long ival,const struct ENTITY *ent);
+
 
 int main(int argc,char *const argv[])
 {
@@ -48,6 +50,7 @@ int main(int argc,char *const argv[])
     char *fns,*fnd;
     fns=malloc(256);
     fnd=malloc(256);
+
 
     // pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond_print = PTHREAD_COND_INITIALIZER;
@@ -228,7 +231,17 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         if(opt.srcname){
             stu->preform_dst=opt.srcname;
         }
-        seq_find(stu,opt.offset,opt.limit);
+        
+        long pos=bfind(stu->preform_dst,opt.offset,&qq_entity);
+        if(pos < 0){
+            print_error_stack(stderr);
+        } else {
+            if (list(stu, pos-opt.limit/2, opt.limit,pos))
+            {
+                print_error_stack(stdout);
+            }
+
+        }
     break;
     default:
         usage(argv[0]);

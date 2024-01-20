@@ -7,11 +7,16 @@
 #include "timestamp.h"
 #include "error_stack.h"
 
-typedef int (*itcmp)(const void *,const void *);
 
 
-void buble_sort(void *,size_t ,size_t ,itcmp);
-void quick_sort(void *,size_t ,size_t ,itcmp);
+void buble_sort(void *,size_t ,size_t ,const struct ENTITY *);
+void quick_sort(void *,size_t ,size_t ,const struct ENTITY *);
+void libqsort(void *mtr,size_t left,size_t right,const struct ENTITY *ent)
+{
+    char *ptr=mtr+left;
+    size_t cnt=right-left;
+    qsort(ptr,cnt,ent->unitsize,ent->cmp);
+}
 long random(void);
 struct sort_para{
     const char *desc;
@@ -35,7 +40,7 @@ uint8_t *randomdata(long total)
 }
 int run_sort(
     struct sort_para *para,
-    void (*sort)(void *,size_t,size_t,itcmp))
+    void (*sort)(void *,size_t ,size_t,const struct ENTITY *))
 {
     char tmstr[256];
     long tm1,tm2;
@@ -43,11 +48,11 @@ int run_sort(
     printf("正在\033[0;34m%s\033[0m, %ld个对象",para->desc,para->total);
     fflush(stdout);    
     now(&tm1);
-    sort(para->data,para->total,us,para->ent->cmp);
+    sort(para->data,0,para->total,para->ent);
     now(&tm2);
     for(size_t ix=0;ix<para->total -1;ix++){
         if(para->ent->cmp(para->data+ix*us,para->data + (ix+1) * us)>0){
-            printf("数组没有被正确排序\n");
+            printf("数组没有被正确排序(%ld)\n",ix);
             return -1;
         }
     }
@@ -73,7 +78,7 @@ int mem_sort_test(long total){
     pr.data=ary;
     pr.total=total;
     pr.desc="系统快速";
-    if(run_sort(&pr,qsort)){
+    if(run_sort(&pr,libqsort)){
         return -1;
     }
     memcpy(ary,org,total*us);
