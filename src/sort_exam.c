@@ -22,6 +22,7 @@ int is_sorted(FILE *fh,long offset,long total,const struct ENTITY *ent)
         long ss=fread(buf,us,bs,fh);
         for(long ix=0;ix<ss-1;ix++){
             if(ent->cmp(buf + ix * us,buf + (ix+1) * us)>0){
+                printf("offset: %ld\n",ix+offset);
                 ERROR("没排序");
                 free(buf);
                 return -1;

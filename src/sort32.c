@@ -25,7 +25,7 @@
 //#define MBOARDCAST(cnd,ret) 
 #define MSIGNAL(cnd)    if(pthread_cond_signal(cnd)){ERROR("pthread_cond_signal() 错误\n");goto finish;}
 
-#define MEM_SORT_SIZE  5120
+#define MEM_SORT_SIZE  20480
 
 struct run_data{
     struct Bag              *jobs;
@@ -40,12 +40,17 @@ struct run_data{
 extern int cpunum;
 
 int int_act;
+void repeat(FILE *out,int ch,int cnt);
 void sighandler(int signum)
 {
     int_act=signum;
     switch(signum){
         case SIGUSR1:
         int_act=SHOW_PROGRESS;
+        break;
+        case SIGUSR2:
+        int_act=SHOW_PARTITION;
+        repeat(stdout,'-',40);
         break;
         case SIGINT:
         int_act=SORTING_BREAK;
@@ -122,6 +127,12 @@ int64_t qsort_partition(FILE *fh,int64_t pos1,int64_t pos2,const struct ENTITY *
             }
 
         }
+        if(int_act==SHOW_PARTITION){
+            int64_t di=pos2-pos1;
+            int precent = (ix-pos1) * 100 /di;
+            printf("%10ld (%10ld,%10ld,%10ld) %3d%%\n",store_idx,pos1,ix,pos2,precent);
+            int_act=NO_ACTION;
+        }
     }
     if(save2(fh,pos2-1,store,ent)){
         ERROR("写文件错误");
@@ -159,14 +170,29 @@ int mem_sort(FILE *fh,int64_t pos,int64_t amount,char *buf,const struct ENTITY *
 }
 void show_detail(struct run_data *rd)
 {
-    while(rd->running){
-//        MWAIT(rd->cond,rd->mutex)
+    while(1){
+/*         int all_stop=1;
+        for(int ix=0;ix<cpunum;ix++){
+            if(rd->working[ix*2+1]){
+                all_stop=0;
+                break;
+            }
+        }
+        if(all_stop){
+            break;
+        }
+ */
         pause();
         if(int_act==SORTING_BREAK){
-            rd->running=0;
+            if(rd->running){
+                rd->running=0;
+                printf("程序将会在所有任务结束后保存进度\n");
+                int_act=SHOW_PARTITION;
+                break;
+            }
         }
         if(int_act==SHOW_PROGRESS){
-            printf("=========================================\n");
+            repeat(stdout,'=',40);
             for(int ix=0;ix<cpunum;ix++){
                 if(rd->working[ix*2+1]){
                     int64_t d1=rd->working[ix*2];
@@ -176,7 +202,6 @@ void show_detail(struct run_data *rd)
             }
             bag_print(rd->jobs,stdout,8);
         }
-        //MSIGNAL(rd->cond)
     }
 }
 //extern struct timespec NS100;
@@ -210,7 +235,7 @@ void *sort32_task(void *obj)
             }
             if(done){
                 // 所有任务都停止了
-                sd->running=0;
+                //sd->running=0;
                 break;
             } else {
                 // 等待其他的线程出结果
@@ -222,6 +247,7 @@ void *sort32_task(void *obj)
             sd->working[id*2+1]=scope[1];
             MUNLOCK(sd->mutex,goto finish)
             int64_t pivot=qsort_partition(fh,scope[0],scope[1],sd->ent);
+            //printf("id %2d (%10ld,%10ld,%10ld)\n",id,scope[0],pivot,scope[1]);
             if(pivot < 0){
                 goto finish;
             }
@@ -241,33 +267,34 @@ void *sort32_task(void *obj)
                 }
             }
             sco = scope[1]-pivot;
-            if(sco > 1){
+            if(sco > 2){
                 if(sco < MEM_SORT_SIZE){
-                    if(mem_sort(fh,pivot,sco,mem_buf,sd->ent)){
+                    if(mem_sort(fh,pivot+1,sco-1,mem_buf,sd->ent)){
                         goto finish;
                     }
+//                    PRE("id %2d acq lock\n",id);
                     MLOCK(sd->mutex,goto finish)
                 } else {
                     MLOCK(sd->mutex,goto finish)
+                    bag_put2(sd->jobs,pivot+1,scope[1]);
                     MSIGNAL(sd->cond)
-                    bag_put2(sd->jobs,pivot,scope[1]);
                 }
             }
         }
     }
     MSIGNAL(sd->cond)
+//    sd->working[id*2]=0;
+//    sd->working[id*2+1]=0;
     MUNLOCK(sd->mutex,goto finish)
     //sd->working[id]=0;
     free(mem_buf);
     fclose(fh);
-    if(int_act == SORTING_BREAK){
-        PRE("task %2d is broken by user\n",id);
-    } else {
-        PRE("task %2d is done\n",id);
-    }
+    PRE("task %2d is exit\n",id);
     return NULL;
 finish:
-    sd->running=0;
+    sd->working[id*2]=0;
+    sd->working[id*2+1]=0;
+    PRE("task %2d exit with error\n",id);
     MSIGNAL(sd->cond)
     MUNLOCK(sd->mutex,goto finish)
     if(pthread_cond_broadcast(sd->cond))
@@ -310,12 +337,36 @@ void sort32(struct STATUS *sta)
     if(has_error()){
         print_error_stack(stderr);
     }else {
-        // break or done
+        int size;
+        int64_t *data=bag_array(sort_data.jobs,&size);
+        if(size){
+            sta->scope_cnt=size;
+            sta->scope=data;
+        } else {
+            sta->scope_cnt=0;
+            sta->scope=NULL;
+            printf("排序完成\n");
+        }
     }
+    bag_free(sort_data.jobs);
     free(bytes);
 }
 
-
+int test_partition(const struct ENTITY *ent)
+{
+    FILE *fd=fopen("/home/tec/big/qq-sorted.bin","r+");
+    if(fd==NULL){
+        ERROR_BY_ERRNO();
+        return -1;
+    }
+    long mid=qsort_partition(fd,89,82567,ent);
+    fclose(fd);
+    if(mid<0){
+        return -1;
+    }
+    printf("===========>%10ld\n",mid);
+    return 0;
+}
 /*
 暂时的想法
 master线程是空闲的因此会进入等待

@@ -3,6 +3,7 @@
 struct ENTITY{
     int (*cmp)(const void *,const void *);
     int (*lt)(const void *,const void *);
+    int (*valcmp)(unsigned long,const void *);
     const char *(*str)(const void *);
     const int unitsize;
 };

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <string.h>
 #include <assert.h>
 #define EMPTY -2
 #define MAX 1000
@@ -84,6 +85,18 @@ int bag_put2(struct Bag *ps,int64_t p1,int64_t p2){
     ptr->data[idx]=p1;
     ptr->data[idx+1]=p2;
     return 0;
+}
+int64_t* bag_array(struct Bag *ps,int *num){
+    *num=ps->idx;
+    if(ps->idx){
+        long total=8 * ps->idx;
+        int64_t *ary=malloc(total);
+        memcpy(ary,ps->data,total);
+        return ary;
+    } else {
+        return NULL;
+    }
+
 }
 int bag_print(struct Bag *ps,FILE *out,int limit)
 {

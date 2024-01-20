@@ -34,6 +34,8 @@ int test_signed(const void *pl){
 
 extern const struct ENTITY qq_entity;
 
+
+int test_partition(const void *);
 int test_qq_entity(const void *pl);
 int test_rand(const void *pl);
 const char *const unsorting="/tmp/unsorting.bin";
@@ -45,6 +47,7 @@ const struct test_unit ut_array[]={
     {"signed",test_signed,0},
     {"qq_entity",test_qq_entity,0},
     {"qsort_part",test_qsort_partition,&qq_entity},
+    {"part89",test_partition,&qq_entity},
     {0,0,0}
 };
 

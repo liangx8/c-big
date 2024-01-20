@@ -9,6 +9,7 @@ int bag_put2                (struct Bag *,long,long);
 int bag_print               (struct Bag *,void *out,int limit);
 int bag_put                 (struct Bag *,long);
 int bag_exist               (struct Bag *,long);
+long *bag_array             (struct Bag *,int *);
 
 /*
 struct MutexPairs;

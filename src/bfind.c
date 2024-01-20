@@ -28,3 +28,31 @@ void seq_find(const struct STATUS *stu,uint32_t val,int limit)
 {
     sfd.ent=stu->payload;
 }
+off_t filesize(const char *);
+off_t bfind(const char *dst,const void *val,const struct ENTITY *ent)
+{
+    char buf[ent->unitsize];
+    long size=filesize(dst);
+    long right = size / ent->unitsize;
+    FILE *fdst=fopen(dst,"r");
+    long left=0;
+    long op=(right-left)/2;
+    while(1){
+        fseek(fdst,op * ent->unitsize,SEEK_SET);
+        if(fread(&buf[0],ent->unitsize,1,fdst)<1){
+            return -1;
+        }
+        if((ent->cmp(val,buf))<0){
+            right=op;
+            op=(left + right)/2;
+            continue;
+        }
+        if(ent->cmp(val,buf)==0){
+            return op;
+        }
+        // greater then
+        left=op;
+        op=(left + right)/2;
+
+    }
+}

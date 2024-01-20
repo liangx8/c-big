@@ -11,6 +11,7 @@
 
 //#include "test_item.h"
 
+
 const char *config_file = "status.json";
 
 int cpunum;
@@ -35,6 +36,7 @@ void test_multi_write(void);
 int same_block(const unsigned char *src,const unsigned char *dst,int len);
 void unit_run(const char *name);
 long filesize(const char *);
+int makedata(const char *dst,int64_t size);
 
 int main(int argc,char *const argv[])
 {
@@ -68,10 +70,18 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     stu = status_file_load_or_new(config_file);
     parse(argc, argv, &opt);
     stu->payload=&qq_entity;
-    full_path(fnd,stu->dst);
-    full_path(fns,stu->src);
-    stu->preform_dst=fnd;
-    stu->preform_src=fns;
+    if(stu->src[0]=='/'){
+        stu->preform_src=stu->src;
+    } else {
+        full_path(fns,stu->src);
+        stu->preform_src=fns;
+    }
+    if(stu->dst[0]=='/'){
+        stu->preform_dst=stu->dst;
+    }else {
+        full_path(fnd,stu->dst);
+        stu->preform_dst=fnd;
+    }
     if(opt.srcname){
         stu->preform_dst=opt.srcname;
     }
@@ -87,10 +97,11 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
         free(stu->scope);
         stu->scope=NULL;
         stu->step=0;
-        stu->step1time=0;
     case SORT:
         {
             if(stu->step <2 ){
+                stu->step1time=0;
+                stu->step2time=0;
                 status_print(stu);
                 if (now(&tm) == -1)
                 {
@@ -108,19 +119,36 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
                     return -1;
                 }
                 stu->step1time += tm1-tm;
+                //s32_apart_exam(stu);
+                stu->step=2;
+                status_print(stu);
                 if( status_save(stu, config_file)){
                     print_error_stack(stdout);
                     return -1;
                 }
-                s32_apart_exam(stu);
             }
-            // step1 完成
-            // 如果返回不是0也不是-1，就是跳过
-            sort32(stu);
-            status_print(stu);
-#ifdef DNUM
-            seq_find(stu->preform_dst,DNUM,10);
-#endif
+            if(stu->scope_cnt){
+                if (now(&tm) == -1)
+                {
+                    print_error_stack(stdout);
+                }
+                sort32(stu);
+                if (now(&tm1) == -1)
+                {
+                    print_error_stack(stdout);
+                    return -1;
+                }
+                stu->step2time += tm1-tm;
+                if( status_save(stu, config_file)){
+                    print_error_stack(stdout);
+                    return -1;
+                }
+                status_print(stu);
+            } else {
+                timestamp_str(tmstr,stu->step1time+stu->step2time);
+                printf("已经排序，用时 %s\n",tmstr);
+            }
+
             /*
             if(stu->step ==1){
                 printf("第一步被中断\n");
@@ -138,14 +166,14 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
             if(opt.limit < 0){
                 total=filesize(stu->preform_dst)/qq_entity.unitsize;
             } else {
-                total=opt.limit;
+                total=opt.offset+opt.limit;
             }
-            printf("检测数据%s(%ld,%ld)...\n",stu->preform_dst,opt.offset,opt.offset+total);
+            printf("检测数据%s(%ld,%ld)...\n",stu->preform_dst,opt.offset,total);
             FILE *fh=fopen(stu->preform_dst,"r");
             if(fh==NULL){
                 ERROR_BY_ERRNO();
             } else {
-                is_sorted(fh,opt.offset,total,stu->payload);
+                is_sorted(fh,opt.offset,total-opt.offset,stu->payload);
                 fclose(fh);
             }
             if(has_error()){
@@ -188,8 +216,10 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     }
     break;
     case GEN_RAND_TEST:
-        apart32(stu);
-        status_save(stu,config_file);
+        printf("target file %s\n",stu->preform_src);
+        if(makedata(stu->preform_src,opt.offset)){
+            print_error_stack(stderr);
+        }
     break;
     case FIND:
         if(opt.limit==0){

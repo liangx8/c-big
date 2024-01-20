@@ -119,7 +119,7 @@ void status_print(struct STATUS *stu)
     } 
     if(stu->step==2){
         if(stu->step2time){
-            timestamp_str(tmstr,stu->step1time);
+            timestamp_str(tmstr,stu->step2time);
             printf("step2 time: %s\n",tmstr);
         }
         for (int ix = 0; ix < stu->scope_cnt; ix+=2)
@@ -130,6 +130,8 @@ void status_print(struct STATUS *stu)
     }
     printf("--------------------------------------------------\n");
 }
+
+
 /**
  * @param stu struct status
  * @param fname file name of json
@@ -153,7 +155,6 @@ int status_save(struct STATUS *stu, const char *fname)
         json_object_set_new(obj, "scope", ary);
     }
     // json_object_set_new(obj, "total", json_integer(stu->total));
-
     if (json_dump_file(obj, fname, 0))
     {
         ERROR_BY_ERRNO();

@@ -42,9 +42,20 @@ uint32_t qq_value(const struct qq_ent *ent)
 {
     return ent->qq;
 }
+int qq_vcmp(uint32_t val,const struct qq_ent *ent)
+{
+    if(val == ent->qq){
+        return 0;
+    }
+    if(val < ent->qq){
+        return -1;
+    }
+    return 1;
+}
 const struct ENTITY qq_entity={
     (int (*)(const void *,const void *))qq_cmp,
     (int (*)(const void *,const void *))qq_lt,
+    (int (*)(uint64_t,const void *))qq_vcmp,
     qq_str,
     12};
 

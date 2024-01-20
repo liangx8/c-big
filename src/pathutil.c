@@ -17,7 +17,15 @@ int full_path(char *buf, const char *str)
     strcat(buf, str);
     return 0;
 }
-
+void repeat(FILE *out,int ch,int cnt)
+{
+    char rep[cnt+1];
+    for(int ix=0;ix<cnt;ix++){
+        rep[ix]=ch;
+    }
+    rep[cnt]='\0';
+    printf("%s\n",rep);
+}
 off_t filesize(const char *path)
 {
     struct stat st;
