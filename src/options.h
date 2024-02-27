@@ -5,6 +5,7 @@ struct OPTION
     long offset;
     const char *srcname;
     const char *testname;
+    const char *app;
     int action;
     long limit;
 };
@@ -20,4 +21,5 @@ struct OPTION
 #define DUPLICATE    9
 void parse(int argc, char *const argv[], struct OPTION *data);
 void usage(const char*);
+
 #endif

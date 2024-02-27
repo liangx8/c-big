@@ -16,6 +16,8 @@ void usage(const char *me){
     printf(usage_str,me);
 }
 
+const char *const app_id[]={"searchqq","nameid"};
+
 int populate_num(struct OPTION *ptr,char *str)
 {
     char buf[16];
@@ -44,10 +46,14 @@ void parse(int argc, char *const argv[], struct OPTION *data)
     data->limit=20;
     data->offset=0;
     data->action=SORT;
-    while ((opt = getopt(argc, argv, "n:hG:f:t:T:l:o:b")) != -1)
+    data->app=NULL;
+    while ((opt = getopt(argc, argv, "A:n:hG:f:t:T:l:o:b")) != -1)
     {
         switch (opt)
         {
+        case 'A':
+            data->app=optarg;
+            break;
         case 'n':
             data->action = GEN_RAND_TEST;
             data->offset = atoi(optarg);

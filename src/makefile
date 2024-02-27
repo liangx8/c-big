@@ -1,7 +1,7 @@
 .PHONY: clean
 CC=gcc
 RM=rm -rf
-CFLAGS=-Wall
+CFLAGS:=-Wall
 #CFLAGS+=-DFIXING_BUG
 #CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)
@@ -14,11 +14,12 @@ ifeq (${OPTS}x, x)
 else
 	CFLAGS+=${OPTS}
 endif
-SRCS=$(wildcard *.c)
+SRCS=$(wildcard *.c nameid/*.c)
+#SRCS=$(shell find . -name \*.c -and -type f)
 OBJS=${SRCS:.c=.o}
-LDFLAGS=-Wall
+LDFLAGS:=-Wall
 LDFLAGS+=$(shell pkgconf --libs jansson)
-LDFLAGS+=# -static
+#LDFLAGS+= -static
 
 all:${TARGET}
 	@echo "*** Done ***"
@@ -29,9 +30,10 @@ release:${OBJS}
 ${TARGET}:${OBJS}
 	${CC} -o $@ ${OBJS} ${LDFLAGS}
 clean:
-	${RM} *.o ${TARGET} *~
+	${RM} ${TARGET}
+	find . -name \*~ -or -name \*.o -exec ${RM} \{} \;
 
 #%.o:%.cpp
 .c.o:
-	${CC} -c $< ${CFLAGS}
+	${CC} -c $< ${CFLAGS} -o $@
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include "error_stack.h"
 

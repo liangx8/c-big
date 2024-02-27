@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/big",
-            "args": ["-T","mem_sort"],
+            "args": ["-T","strs"],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],

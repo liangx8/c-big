@@ -20,6 +20,7 @@
         "stdio.h": "c",
         "cstring": "c",
         "variant": "c",
-        "bag.h": "c"
+        "bag.h": "c",
+        "strs.h": "c"
     }
 }

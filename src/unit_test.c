@@ -38,6 +38,7 @@ extern const struct ENTITY qq_entity;
 int test_partition(const void *);
 int test_qq_entity(const void *pl);
 int test_rand(const void *pl);
+int test_strs(const void *pl);
 const char *const unsorting="/tmp/unsorting.bin";
 int mem_sort_test(const void*); // memsort_test.c
 int test_qsort_partition(const void *);
@@ -48,6 +49,7 @@ const struct test_unit ut_array[]={
     {"qq_entity",test_qq_entity,0},
     {"qsort_part",test_qsort_partition,&qq_entity},
     {"part89",test_partition,&qq_entity},
+    {"strs",test_strs,0},
     {0,0,0}
 };
 
@@ -93,4 +95,30 @@ int test_rand(const void *pl)
         printf("%10d:%16x,%16x,%11d\n",yy,yy,zz,zz);
     }
     return 0;
+}
+
+void hex(char *buf,int total)
+{
+    printf("total %d(%x)\n",total,total);
+    printf("                 ");
+    for (int ix=0;ix<16;ix++){
+        printf("%02x ",ix);
+        if (ix == 7){
+            printf("| ");
+        }
+    }
+    printf("\n");
+    for (int ix=0;ix<total;ix++){
+        if ((ix & 0xf) ==0){
+            printf("%016lx ",(long)(buf +ix));
+        }
+        if (((ix-1) & 0xf)==7){
+            printf("| ");
+        }
+        printf("%02x ",(0xff & buf[ix]));
+        if ((ix & 0xf) ==0xf){
+            printf("\n");
+        }
+    }
+    printf("\n");
 }

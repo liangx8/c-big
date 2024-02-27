@@ -1,3 +1,4 @@
 src/big
 src/*.o
 src/*.json
+src/**/*.o
