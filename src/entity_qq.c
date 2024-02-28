@@ -32,11 +32,15 @@ int qq_lt(const uint32_t *qq1,const uint32_t *qq2)
 /**
  * 
 */
-const char * qq_str(const void *obj)
+const char *qq_keystr(const void *obj)
 {
     const struct qq_ent *qq = obj;
     snprintf(print_str,PRINT_WIDTH,"%11u:%11lu",qq->qq,qq->ph);
     return print_str;
+}
+const char * qq_str(const void *obj,const void *_)
+{
+    return qq_keystr(obj);
 }
 uint32_t qq_value(const struct qq_ent *ent)
 {
@@ -52,11 +56,25 @@ int qq_vcmp(uint32_t val,const struct qq_ent *ent)
     }
     return 1;
 }
+int qq_print(const struct qq_ent *ent,int64_t *hl,int64_t offset)
+{
+    if(*hl == offset){
+        printf("\033[0;35m");
+    }
+    printf("%12ld,%11u:%11lu",offset,ent->qq,ent->ph);
+    if(*hl== offset){
+        printf("\033[0m");
+    }
+    printf("\n");
+
+
+}
 const struct ENTITY qq_entity={
     (int (*)(const void *,const void *))qq_cmp,
     (int (*)(const void *,const void *))qq_lt,
     (int (*)(uint64_t,const void *))qq_vcmp,
     qq_str,
+    qq_keystr,
     12};
 
 

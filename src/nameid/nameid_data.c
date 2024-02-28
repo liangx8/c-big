@@ -48,10 +48,8 @@ struct st_nameid *new_nameid(const char *dbn){
     uint8_t byte4[4];
     uint32_t *p32=(uint32_t *)&byte4[0];
     size_t sz=fread(&byte4[0],4,1,fsrc);
-    printf("ck1:%ld\n",sz);
     int32_t i32=*p32;
     uint8_t *buf=malloc(i32);
-    printf("ck2:%d\n",i32);
     fseek(fsrc,-i32,SEEK_END);
 
     sz=fread(buf,1,i32,fsrc);

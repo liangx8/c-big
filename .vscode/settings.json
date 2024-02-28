@@ -21,6 +21,7 @@
         "cstring": "c",
         "variant": "c",
         "bag.h": "c",
-        "strs.h": "c"
+        "strs.h": "c",
+        "entity.h": "c"
     }
 }

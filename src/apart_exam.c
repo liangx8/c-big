@@ -15,7 +15,7 @@
  * @param scope 4个数的数组，[0]左边界[1]分界点[3]右边界
  * @param ent   ...
  **/
-int apart_exam(FILE *fh,long *scope,const struct ENTITY *ent)
+int apart_exam(FILE *fh,long *scope,const struct ENTITY *ent,const void *pl)
 {
     const int us=ent->unitsize;
     char pivot[us];
@@ -28,7 +28,7 @@ int apart_exam(FILE *fh,long *scope,const struct ENTITY *ent)
         ERROR_BY_ERRNO();
         return -1;
     }
-    printf("value: \033[0;33m%s\033[0m\n",ent->str(pivot));
+    printf("value: \033[0;33m%s\033[0m\n",ent->str(pivot,pl));
     fseek(fh,pos1 * us,SEEK_SET);
     long cnt=0;
     while(1){
@@ -76,7 +76,7 @@ void s32_apart_exam(struct STATUS *sta)
         ERROR_BY_ERRNO();
         return;
     }
-    if(apart_exam(fh,sta->scope,ent)){
+    if(apart_exam(fh,sta->scope,ent,NULL)){
         print_error_stack(stderr);
         return;
     }

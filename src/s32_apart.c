@@ -132,7 +132,7 @@ long filesize(const char*path); // pathutil.c
  * @param sta 配置
  * @return 返回分界的位置,返回的值属于第二部分
  */
-void apart32(struct STATUS *stu)
+void apart32(struct STATUS *stu,const void *pl)
 {
     FILE *fh;
     int64_t amount;
@@ -179,7 +179,7 @@ void apart32(struct STATUS *stu)
         return;
     }
     
-    printf("pivot value %s, amount:%ld\n",apart_data.ent->str(apart_data.pivot),amount);
+    printf("pivot value %s, amount:%ld\n",apart_data.ent->keystr(apart_data.pivot),amount);
     apart_data.mu_writ   = &mu_writ;
     pid=malloc(sizeof(pthread_t)*(cpunum-1));
 

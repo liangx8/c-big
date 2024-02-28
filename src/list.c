@@ -5,7 +5,7 @@
 #include "entity.h"
 #include "error_stack.h"
 //#define ENTITY_SIZE 12
-int list(const struct STATUS *stu, int64_t offset, int limit,int highlight)
+int list(const struct STATUS *stu,void *pl, int64_t offset, int limit,int highlight)
 {
     FILE *fh = fopen(stu->preform_dst, "rb");
     const struct ENTITY *ent=stu->payload;
@@ -44,7 +44,7 @@ int list(const struct STATUS *stu, int64_t offset, int limit,int highlight)
         if(highlight == offset + i){
             printf("\033[0;35m");
         }
-        printf("%12ld,%s",offset + i,ent->str(ptr));
+        printf("%12ld,%s",offset + i,ent->str(ptr,pl));
         if(highlight== offset +i){
             printf("\033[0m");
         }

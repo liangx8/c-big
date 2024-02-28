@@ -304,5 +304,3 @@ static inline int load(FILE *hdl,uint8_t *buf,int64_t idx)
 }
 
 
-void unit_test(void){
-}

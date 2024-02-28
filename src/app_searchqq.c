@@ -16,15 +16,11 @@ extern const char *config_file;
 
 void apart32(struct STATUS *);
 void sort32(struct STATUS *);
-void s32_apart_exam(struct STATUS *);
 int is_sorted(FILE *fh,long offset,long total,const struct ENTITY *ent);
-int list(const struct STATUS *, int64_t , int,int);
+int list(const struct STATUS *,const void *, int64_t , int,int);
 int gentestdata(const char *src, const char *dst, int64_t size);
 void mem_sort_test(const char *);
-void unit_test(void); // test_thread.c
-//void full_path(char *,const char *);
 void seq_find(const struct STATUS *,unsigned int val,int limit);
-void test_signal(void);
 void test_multi_write(void);
 int same_block(const unsigned char *src,const unsigned char *dst,int len);
 void unit_run(const char *name);
@@ -68,7 +64,6 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
                     return -1;
                 }
                 stu->step1time += tm1-tm;
-                //s32_apart_exam(stu);
                 stu->step=2;
                 status_print(stu);
                 if( status_save(stu, config_file)){
@@ -135,7 +130,7 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
     case LIST:
     {
         status_print(stu);
-        if (list(stu, opt->offset, opt->limit,0))
+        if (list(stu,NULL, opt->offset, opt->limit,0))
         {
             print_error_stack(stdout);
         }
@@ -146,8 +141,6 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
         //test_pair();
         //test_multi_write();
         unit_run(opt->testname);
-        //test_signal();
-        //unit_test();
         break;
     case GEN_TEST:
     {
@@ -183,7 +176,7 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
         if(pos < 0){
             print_error_stack(stderr);
         } else {
-            if (list(stu, pos-opt->limit/2, opt->limit,pos))
+            if (list(stu, NULL,pos-opt->limit/2, opt->limit,pos))
             {
                 print_error_stack(stdout);
             }
