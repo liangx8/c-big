@@ -6,8 +6,7 @@
 
 #define PR(fmt,args...) printf("%s(%3d):" fmt ,__FILE__,__LINE__,args)
 
-#define pa1(p) (uint32_t)(p>>32)
-#define pa2(p) (uint32_t)(p & 0xffffffff)
+
 uint64_t tr_str(char *,const char *);
 
 int test_tr_str(FILE *fp)

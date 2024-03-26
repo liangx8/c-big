@@ -17,7 +17,7 @@ extern const char *config_file;
 void apart32(struct STATUS *);
 void sort32(struct STATUS *);
 int is_sorted(FILE *fh,long offset,long total,const struct ENTITY *ent);
-int list(const struct STATUS *,const void *, int64_t , int,int);
+int list(const struct STATUS *,int64_t, int64_t ,int);
 int gentestdata(const char *src, const char *dst, int64_t size);
 void mem_sort_test(const char *);
 void seq_find(const struct STATUS *,unsigned int val,int limit);
@@ -130,7 +130,7 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
     case LIST:
     {
         status_print(stu);
-        if (list(stu,NULL, opt->offset, opt->limit,0))
+        if (list(stu,0, opt->offset, opt->limit))
         {
             print_error_stack(stdout);
         }
@@ -176,7 +176,10 @@ int search_qq(struct STATUS *stu,struct OPTION *opt)
         if(pos < 0){
             print_error_stack(stderr);
         } else {
-            if (list(stu, NULL,pos-opt->limit/2, opt->limit,pos))
+            printf("==============<%ld\n",pos);
+            off_t start=pos-opt->limit/2;
+            if (start<0)start=0;
+            if (list(stu, pos,start, opt->limit))
             {
                 print_error_stack(stdout);
             }

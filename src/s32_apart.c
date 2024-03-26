@@ -132,7 +132,7 @@ long filesize(const char*path); // pathutil.c
  * @param sta 配置
  * @return 返回分界的位置,返回的值属于第二部分
  */
-void apart32(struct STATUS *stu,const void *pl)
+void apart32(struct STATUS *stu)
 {
     FILE *fh;
     int64_t amount;

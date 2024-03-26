@@ -18,7 +18,16 @@ struct strs{
     int num;
     char *ss[];
 };
-
+int chinaid(char *dst,uint64_t id)
+{
+    int isuf=id & 1;
+    uint64_t real=id >> 1;
+    sprintf(dst,"%lu",real);
+    if (isuf){
+        dst[17]='X';
+    }
+    return 0;
+}
 uint64_t tr_str(char *dst,const char *src){
     uint32_t dcnt=0; // dst counter
     uint32_t scon=0; // src consumer

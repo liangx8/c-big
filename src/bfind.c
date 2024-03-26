@@ -29,41 +29,42 @@ void seq_find(const struct STATUS *stu,uint32_t val,int limit)
     sfd.ent=stu->payload;
 }
 off_t filesize(const char *);
+/**
+ * @brief 快速查找，dst的内容必须是递增排序，ent->vallt(v,idx)必须是 v <= ary[idx]
+ * 查找第一个符合vallt返回真值的索引
+*/
 off_t bfind(const char *dst,uint64_t ival,const struct ENTITY *ent)
 {
     char buf[ent->unitsize];
     long size=filesize(dst);
     long right = size / ent->unitsize;
     FILE *fdst=fopen(dst,"r");
+    long left=0;
+    long op;
     if(fdst==NULL){
         ERROR_BY_ERRNO();
         return -1;
     }
-    long left=0;
-    long op=(right+left)/2;
+
     while(1){
-        if(right-left <2){
+        if(right==left){
             fclose(fdst);
-            ERROR("Not Found");
-            return -1;
+            return right;
         }
+        op=(left+right)/2;
         fseek(fdst,op * ent->unitsize,SEEK_SET);
         if(fread(&buf[0],ent->unitsize,1,fdst)<1){
             fclose(fdst);
             ERROR("INTERNAL ERROR");
             return -1;
         }
-        if((ent->valcmp(ival,buf))<0){
+        if(ent->vallt(ival,buf)){
             right=op;
-            op=(left + right)/2;
-            continue;
+        } else {
+            left=op;
         }
-        if(ent->valcmp(ival,buf)==0){
-            fclose(fdst);
-            return op;
+        if(left+1==right){
+            return right;
         }
-        // greater then
-        left=op;
-        op=(left + right)/2;
     }
 }

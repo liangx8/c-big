@@ -22,6 +22,7 @@
         "variant": "c",
         "bag.h": "c",
         "strs.h": "c",
-        "entity.h": "c"
+        "entity.h": "c",
+        "nameid.h": "c"
     }
 }

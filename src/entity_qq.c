@@ -5,7 +5,7 @@
 #include "error_stack.h"
 #include "entity.h"
 #define PRINT_WIDTH 30
-
+#define RECORD_SIZE 12
 static char print_str[PRINT_WIDTH];
 /* 令结构以4字节对齐 */
 #pragma pack(push, 4)
@@ -38,34 +38,48 @@ const char *qq_keystr(const void *obj)
     snprintf(print_str,PRINT_WIDTH,"%11u:%11lu",qq->qq,qq->ph);
     return print_str;
 }
-const char * qq_str(const void *obj,const void *_)
-{
-    return qq_keystr(obj);
-}
 uint32_t qq_value(const struct qq_ent *ent)
-{
+{   
     return ent->qq;
 }
-int qq_vcmp(uint32_t val,const struct qq_ent *ent)
+int qq_vcmp(uint32_t val,const uint32_t *qq)
 {
-    if(val == ent->qq){
-        return 0;
-    }
-    if(val < ent->qq){
+    return val <= *qq;
+}
+
+int qq_list(FILE *fh,long offset,long hl,int limit){
+    char *buf;
+    int bsize = limit * RECORD_SIZE;
+    buf = malloc(bsize);
+    if (fseek(fh, offset * RECORD_SIZE, SEEK_SET))
+    {
+        ERROR_BY_ERRNO();
         return -1;
     }
-    return 1;
-}
-int qq_print(const struct qq_ent *ent,int64_t *hl,int64_t offset)
-{
-    if(*hl == offset){
-        printf("\033[0;35m");
+    int num = fread(buf, RECORD_SIZE, limit, fh);
+    if (ferror(fh))
+    {
+        ERROR_BY_ERRNO();
+        return -1;
     }
-    printf("%12ld,%11u:%11lu",offset,ent->qq,ent->ph);
-    if(*hl== offset){
-        printf("\033[0m");
+    char *ptr=buf;
+    for (int i = 0; i < num; i++)
+    {
+        if(hl == offset + i){
+            printf("\033[0;35m");
+        }
+        struct qq_ent *ent=(struct qq_ent*)ptr;
+        printf("%12ld,%11u:%11lu",offset + i,ent->qq,ent->ph);
+        if(hl == offset + i){
+            printf("\033[0m");
+        }
+        ptr +=RECORD_SIZE;
+        printf("\n");
     }
-    printf("\n");
+
+    free(buf);
+    return 0;
+
 
 
 }
@@ -73,9 +87,11 @@ const struct ENTITY qq_entity={
     (int (*)(const void *,const void *))qq_cmp,
     (int (*)(const void *,const void *))qq_lt,
     (int (*)(uint64_t,const void *))qq_vcmp,
-    qq_str,
     qq_keystr,
-    12};
+//    (int (*)(const void *,const void *,int64_t))qq_print,
+    (int (*)(const void *,long,long,int))qq_list,
+    RECORD_SIZE
+};
 
 
 int test_qq_entity(void *pl)
