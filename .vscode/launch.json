@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/big",
-            "args": ["-f","612985","/home/com/big-data/qq-sorted.bin"],
+            "args": ["-A","nameid"],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],

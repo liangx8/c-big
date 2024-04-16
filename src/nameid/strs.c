@@ -18,6 +18,12 @@ struct strs{
     int num;
     char *ss[];
 };
+/**
+ * @brief 转换uint64_t成为身份证号
+ * @param dst, 转换结果存放身份证号的内存空间指针,必须是非空值
+ * @param id,  uint64_t身份证号存放的数字形式
+ * @return alway 0
+*/
 int chinaid(char *dst,uint64_t id)
 {
     int isuf=id & 1;
@@ -28,6 +34,11 @@ int chinaid(char *dst,uint64_t id)
     }
     return 0;
 }
+/**
+ * @brief 把储存unicode的内存变成multbyte(utf-8)
+ * @param dst, 储存multbyte的内存区域，最后会加0字最后
+ * @param src, 以长度开始，小于128为1字节,否则为2字节,跟随保存的是unicode16的字节
+*/
 uint64_t tr_str(char *dst,const char *src){
     uint32_t dcnt=0; // dst counter
     uint32_t scon=0; // src consumer
@@ -43,6 +54,7 @@ uint64_t tr_str(char *dst,const char *src){
     for (int ix=0;ix<cc;ix++){
         int cnt=wctomb(dst+dcnt,*((uint16_t *)(src+scon)));
         if (cnt<0){
+            ERROR("是错误吗?");
             return 0;
         }
         scon +=2;
@@ -53,9 +65,10 @@ uint64_t tr_str(char *dst,const char *src){
     return pair(dcnt,scon);
 }
 /**
- * @brief 把wide char string转换成multi-bytes string
- * @param src 中保存的是只有２字节的wide char, 开始的２个字节是整个字符串组的长度
+ * @brief 把src中的数据转换成struct STRS,结构
+ * @param src 中保存的是只有２字节的wide char, 开始的２个字节是整个字符串组的长度(不包含本身)
  * @param cum 在src消耗的字节
+ * @return 返回的结构是在一整快内存申请中。只需要直接free就可以
 */
 struct strs *strs_load(const uint8_t *src,uint16_t *cum)
 {
@@ -64,65 +77,64 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
 
     // 统计字符串
     int cnt=0;
-    uint16_t sum=2;
-    while(sum<slen){
+    while(scnt<slen){
         uint16_t u16;
 
-        if(*(src + sum) & 0x80){
-            u16 = (*(src + sum) & 0x7f) * 256;
-            sum ++;
-            u16 += *(src + sum);
-            sum ++;
+        if(*(src + scnt) & 0x80){
+            u16 = (*(src + scnt) & 0x7f) * 256;
+            scnt ++;
+            u16 += *(src + scnt);
         } else {
-            u16=*(src + sum);
-            sum ++;
+            u16=*(src + scnt);
         }
+        scnt ++;
         cnt++;
-        sum +=u16*2;
-        if ((sum-2) > slen){
-            ERROR("数据错误");
-            return NULL;
-        }
+        // unicode格式保存，2字节的保存长度
+        scnt +=u16*2;
     }
-    // 需要保留的空间
+    if(scnt - slen != 2){
+        ERROR("数据错误");
+        return NULL;
+    }
+    // 需要保留的空间,简单的认为muti-byte会占用3个字节
     int expected_size=(slen * 3 / 2) + (cnt+1) * sizeof(void*);
-    PR("expect size:%d, number of strings:%d\n",expected_size,cnt);
     char *dst=malloc(expected_size);
-    struct strs *ss=(struct strs *)dst;
-    PR("pointer:%lx\n",(long)dst);
+    struct strs *sts=(struct strs *)dst;
     int dcnt=sizeof(void*)*(cnt+1);
-    ss->num=cnt;
-    int idx=0;
+    sts->num=cnt;
     scnt=2; // 重置源索引值
-    PR("base %lx\n",(long)dst);
-    while(idx < cnt){
-#if 1
+    for(int idx=0;idx<cnt;idx++){
         uint64_t pa=tr_str(dst + dcnt,(char *)(src+scnt));
         if (pa==0){
-            ERROR("数据错误");
+            ERROR_WRAP();
             free(dst);
             return NULL;
         }
         //printf("%2d[%3d][%s]\n",idx,dcnt,dst+dcnt);
-        ss->ss[idx]=dst + dcnt;
+        sts->ss[idx]=dst + dcnt;
         dcnt += pa1(pa);
-        PR("next %4d %lx\n",dcnt,(long)(&ss->ss[idx]));
         scnt += pa2(pa);
-#else
-        long addr=(long)(&ss->ss[idx]);
-        ss->ss[idx]=(const char *)idx;
-        PR("%2d %lx\n",idx,addr);
-#endif
-        idx ++;
+        if(dcnt >= expected_size){
+            ERROR("程序设计错误");
+            free(dst);
+            return NULL;
+        }
     }
     if ((scnt - slen) != 2){
         free(dst);
+#if 1
+        char *msg=malloc(256);
+        sprintf(msg,"字符串数据错误(scnt:%d,slen:%d)",scnt,slen);
+        ERROR(msg);
+#else
         ERROR("字符串数据错误");
+#endif
         return NULL;
     }
     //hex(dst,expected_size);
     *cum=scnt;
-    return (struct strs *)dst;
+    printf("slen:%d\n",slen);
+    return sts;
 }
 /**
  * @brief 计数有几个字符串组

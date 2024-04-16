@@ -23,7 +23,7 @@ int test_tr_str(FILE *fp)
     }
     unsigned p1=pa1(pair);
     unsigned p2=pa2(pair);
-    printf("[%s],%d,%d\n",str,p1,p2);
+    printf("目标占用内存空间:汉字*3(utf8) + 1(结尾0),\n源读取内存空间: 1(字长)+2 * 汉字 \n[%s],%d,%d\n",str,p1,p2);
     pair=tr_str(str+p1,b256+p2);
     printf("[%s]",str+p1);
     p1=pa1(pair);
@@ -39,7 +39,7 @@ int test_strs_load(FILE *fp)
     fseek(fp,-4,SEEK_END);
     fread(&b4[0],4,1,fp);
     int32_t i32= *((int32_t *)&b4[0]);
-    printf("total bytes:%d\n",i32);
+    printf("title 占用字节:%d\n",i32);
     fseek(fp,-i32,SEEK_END);
     ptr1=malloc(i32);
     ptr=ptr1;
@@ -77,7 +77,7 @@ int test_strs_load(FILE *fp)
 }
 int test_strs(void *pl)
 {
-    FILE *fh=fopen("/tmp/nameid.bin","r");
+    FILE *fh=fopen("/home/tec/big/nameid.bin","r");
     if (fh==NULL){
         return -1;
     }

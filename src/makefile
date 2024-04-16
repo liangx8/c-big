@@ -24,7 +24,7 @@ LDFLAGS+=$(shell pkgconf --libs jansson)
 all:${TARGET}
 	@echo "*** Done ***"
 release:${OBJS}
-	${CC} -o ${TARGET} ${OBJS} ${LDFLAGS} -static
+	${CC} -o ${TARGET} ${OBJS} ${LDFLAGS}
 	strip	${TARGET}
 	@echo "*** Done ***"
 ${TARGET}:${OBJS}

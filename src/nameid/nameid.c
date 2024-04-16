@@ -20,15 +20,25 @@ int app_nameid(struct STATUS *stu,struct OPTION *opt)
     }
     int seq=0;
     struct BUFFER *sb=new_buffer(2048);
+    int retval=0;
     while(1){
-        printf("seq: %3d ",seq);
+        printf("seq: %8d |=======================================================\n",seq);
+        if(nameid_print1(ptr,sb)){
+            retval = -1;
+            break;
+        }
         seq++;
-        nameid_print1(ptr,sb);
-        if (nameid_next(ptr)){
+        int rs=nameid_next(ptr);
+        if (rs){
+            if (rs<0){
+                retval = -1;
+                break;
+            }
+        } else {
             break;
         }
     }
     buffer_free(sb);
     nameid_close(ptr);
-    return 0;
+    return retval;
 }
