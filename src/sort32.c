@@ -14,11 +14,6 @@
 #include "bag.h"
 
 
-#ifdef NDEBUG
-#define PRE(m) while(1==2)
-#else
-#define PRE(fmt,args...) printf("%s(%3d):" fmt,__FILE__,__LINE__,args)
-#endif
 #define MLOCK(mut,ret)      if(pthread_mutex_lock(mut)) {ERROR("线程锁错误\n");ret;}
 #define MUNLOCK(mut,ret)    if(pthread_mutex_unlock(mut)) {ERROR("线程解锁错误\n");ret;}
 #define MWAIT(cnd,mut)  if(pthread_cond_wait(cnd,mut)){ERROR("ptread_cond_wait() 错误\n");goto finish;}
@@ -197,7 +192,7 @@ void show_detail(struct run_data *rd)
                 if(rd->working[ix*2+1]){
                     int64_t d1=rd->working[ix*2];
                     int64_t d2=rd->working[ix*2+1];
-                    PRE("id:%2d work on (%10ld,%10ld) %10ld\n",ix,d1,d2,d2-d1);
+                    CP_MSG("id:%2d work on (%10ld,%10ld) %10ld\n",ix,d1,d2,d2-d1);
                 }
             }
             bag_print(rd->jobs,stdout,8);
@@ -289,12 +284,10 @@ void *sort32_task(void *obj)
     //sd->working[id]=0;
     free(mem_buf);
     fclose(fh);
-    PRE("task %2d is exit\n",id);
     return NULL;
 finish:
     sd->working[id*2]=0;
     sd->working[id*2+1]=0;
-    PRE("task %2d exit with error\n",id);
     MSIGNAL(sd->cond)
     MUNLOCK(sd->mutex,goto finish)
     if(pthread_cond_broadcast(sd->cond))

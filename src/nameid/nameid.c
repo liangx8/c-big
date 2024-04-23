@@ -16,14 +16,17 @@ int app_nameid(struct STATUS *stu,struct OPTION *opt)
 {
     struct NAMEID *ptr=new_nameid(srcname);
     if (ptr == NULL){
+        ERROR_WRAP();
         return -1;
     }
+    CHECKPOINT();
     int seq=0;
     struct BUFFER *sb=new_buffer(2048);
     int retval=0;
     while(1){
         printf("seq: %8d |=======================================================\n",seq);
         if(nameid_print1(ptr,sb)){
+            ERROR_WRAP();
             retval = -1;
             break;
         }
@@ -32,6 +35,7 @@ int app_nameid(struct STATUS *stu,struct OPTION *opt)
         if (rs){
             if (rs<0){
                 retval = -1;
+                ERROR_WRAP();
                 break;
             }
         } else {
@@ -40,5 +44,6 @@ int app_nameid(struct STATUS *stu,struct OPTION *opt)
     }
     buffer_free(sb);
     nameid_close(ptr);
+    printf("all:%d\n",seq);
     return retval;
 }

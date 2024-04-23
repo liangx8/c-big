@@ -66,7 +66,7 @@ uint64_t tr_str(char *dst,const char *src){
 }
 /**
  * @brief 把src中的数据转换成struct STRS,结构
- * @param src 中保存的是只有２字节的wide char, 开始的２个字节是整个字符串组的长度(不包含本身)
+ * @param src 中保存的是只有２字节的wide char, 开始的２个字节是整个字符串组的大小(不包含本身)
  * @param cum 在src消耗的字节
  * @return 返回的结构是在一整快内存申请中。只需要直接free就可以
 */
@@ -77,23 +77,33 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
 
     // 统计字符串
     int cnt=0;
-    while(scnt<slen){
+    while(scnt<((int)slen+2)){
         uint16_t u16;
+        uint8_t u8;
 
         if(*(src + scnt) & 0x80){
-            u16 = (*(src + scnt) & 0x7f) * 256;
+            u8 = *(src + scnt) & 0x7f;
+            u16=((uint16_t)u8)*256;
             scnt ++;
-            u16 += *(src + scnt);
+            u8=*(src + scnt);
+            u16 += u8;
         } else {
-            u16=*(src + scnt);
+            u8=*(src + scnt);
+            u16=(uint16_t)u8;
         }
         scnt ++;
         cnt++;
         // unicode格式保存，2字节的保存长度
+
         scnt +=u16*2;
+        //printf("%s(%d)scnt:%d, %d\n",__FILE__,__LINE__,scnt,u16*2);
     }
     if(scnt - slen != 2){
+#if 1
+        ERRORV("字符串数据错误(scnt:%d,slen:%d)",scnt,slen);
+#else
         ERROR("数据错误");
+#endif
         return NULL;
     }
     // 需要保留的空间,简单的认为muti-byte会占用3个字节
@@ -122,7 +132,7 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
     }
     if ((scnt - slen) != 2){
         free(dst);
-#if 1
+#if 0
         char *msg=malloc(256);
         sprintf(msg,"字符串数据错误(scnt:%d,slen:%d)",scnt,slen);
         ERROR(msg);
@@ -133,7 +143,6 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
     }
     //hex(dst,expected_size);
     *cum=scnt;
-    printf("slen:%d\n",slen);
     return sts;
 }
 /**
@@ -148,6 +157,7 @@ int calc_strss(const uint8_t *buf,uint32_t size)
     uint32_t sum=0;
     const uint8_t *p8;
     while(1){
+
         p8 = buf + sum;
         const uint16_t *p16=(const uint16_t *)p8;
         uint16_t i16=*p16;
@@ -157,6 +167,7 @@ int calc_strss(const uint8_t *buf,uint32_t size)
             break;
         }
         if(sum>size){
+            ERROR("数据不完整\n");
             return -1;
         }
     }

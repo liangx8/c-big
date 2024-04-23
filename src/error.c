@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include <stdarg.h>
 
 struct runtime_error{
     const char *file;
@@ -12,7 +13,6 @@ struct runtime_error{
 
 static struct runtime_error *s_error=NULL;
 
-
 void error_stack(const char *file,int line,const char* msg){
     struct runtime_error *rte=malloc(sizeof(struct runtime_error));
     rte->file=file;
@@ -21,6 +21,28 @@ void error_stack(const char *file,int line,const char* msg){
     rte->wrap=s_error;
     s_error=rte;
 }
+void error_stack_v(const char *file,int line,const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap,fmt);
+    int num=vsnprintf(NULL,0,fmt,ap);
+    va_end(ap);
+    if(num==0){
+        error_stack(file,line,"()");
+    } else {
+        char *msg=malloc(num+1);
+        va_start(ap,fmt);
+        num=vsnprintf(msg,num+1,fmt,ap);
+        va_end(ap);
+        if (num<0){
+            free(msg);
+            return;
+        }
+        error_stack(file,line,msg);
+    }
+    
+}
+
 void error_stack_by_errno(const char *file,int line){
     struct runtime_error *rte=malloc(sizeof(struct runtime_error));
     rte->file=file;

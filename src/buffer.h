@@ -2,7 +2,7 @@
 #define BUFFER_H_KKE3K3KDK
 struct BUFFER{
     long size;
-    void *data;
+    char data[];
 };
 struct BUFFER *new_buffer(long);
 void buffer_free(struct BUFFER*);

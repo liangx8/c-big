@@ -23,6 +23,9 @@
         "bag.h": "c",
         "strs.h": "c",
         "entity.h": "c",
-        "nameid.h": "c"
+        "nameid.h": "c",
+        "compare": "c",
+        "cstdint": "c",
+        "format": "c"
     }
 }

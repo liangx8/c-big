@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "error_stack.h"
 #include "entity.h"
 
+int rand(void); // stdlib.h
 
 struct test_unit{
     const char *name;
@@ -19,16 +21,17 @@ const unsigned int ts_data[]={
     0xffffff00,0xfffffe00,
     0,0
 };
-int test_signed(const void *pl){
-    unsigned int ui1;
-    unsigned int ui2;
-    int ix=0;
-    while(ts_data[ix*2] || ts_data[ix*2+1]){
-        ui1=ts_data[ix*2];
-        ui2=ts_data[ix*2+1];
-        printf("%2d:%11d and %11d: %11d\n",ix,ui1,ui2,qq_cmp(&ui1,&ui2));
-        ix++;
+int test_work(const void *pl){
+    char *buf=malloc(64);
+    const char *fmt="number:%d";
+    for(int ix=0;ix<4;ix++){
+        int val=rand();
+        int num=snprintf(NULL,0,fmt,val);
+        snprintf(buf,num+1,fmt,val);
+        printf("%d %s\n",num,buf);
     }
+    ERRORV("输出文本:%d %d (%s)\n",1,2,"abc");
+    print_error_stack(stdout);
     return 0;
 }
 
@@ -45,7 +48,7 @@ int test_qsort_partition(const void *);
 const struct test_unit ut_array[]={
     {"mem_sort",mem_sort_test,(void *)100000},
     {"random",test_rand,0},
-    {"signed",test_signed,0},
+    {"work",test_work,0},
     {"qq_entity",test_qq_entity,0},
     {"qsort_part",test_qsort_partition,&qq_entity},
     {"part89",test_partition,&qq_entity},
@@ -85,7 +88,6 @@ void unit_run(const char *name)
     }
 }
 
-int rand(void); // stdlib.h
 int test_rand(const void *pl)
 {
 

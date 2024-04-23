@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
@@ -21,7 +22,7 @@ int load_titles(struct st_nameid *nid,const uint8_t *buf,int size)
     // buf 会被释放，因此不能在这里被重用
     int strscnt= calc_strss((const char *)buf,size);
     if(strscnt<0){
-        ERROR("输入的数据不正确");
+        ERROR_WRAP();
         return -1;
     }
     nid->titles=malloc(sizeof(struct STRS *)*strscnt);
@@ -42,33 +43,47 @@ int load_titles(struct st_nameid *nid,const uint8_t *buf,int size)
     nid->title_cnt=strscnt;
     return 0;
 }
-struct st_nameid *new_nameid(const char *dbn){
+// 文件结尾的12个字节: 4字节记录titles的储存大小，8字节记录总共的记录数
+#define MAGIC_NUM_WIDTH 12
+off_t filesize(const char *path);
+struct st_nameid *new_nameid(const char *dbn)
+{
+    if(filesize(dbn)<8){
+        ERROR("错误的输入文件\n");
+        return NULL;
+    }
 
     FILE *fsrc=fopen(dbn,"r");
     if (fsrc==NULL){
         ERROR_BY_ERRNO();
         return NULL;
     }
-    struct st_nameid *nid=malloc(sizeof(struct st_nameid));
-    
-    fseek(fsrc,-4,SEEK_END);
-    nid->end=ftell(fsrc);
-    uint8_t byte4[4];
-    int32_t *p32=(int32_t *)&byte4[0];
-    size_t sz=fread(&byte4[0],4,1,fsrc);
+    fseek(fsrc,-MAGIC_NUM_WIDTH,SEEK_END);
+    uint8_t magic[MAGIC_NUM_WIDTH];
+    int32_t *p32=(int32_t *)&magic[0];
+    size_t sz=fread(&magic[0],MAGIC_NUM_WIDTH,1,fsrc);
     int32_t i32=*p32;
+    if(i32 <=0){
+        ERROR("读标题数据错误\n");
+        fclose(fsrc);
+        return NULL;
+    }
+    struct st_nameid *nid;
+    nid=malloc(sizeof(struct st_nameid));
+    
     uint8_t *buf=malloc(i32);
     fseek(fsrc,-i32,SEEK_END);
+    nid->end=ftell(fsrc);
+    CP_MSG("file size:%ld,total:%ld\n",nid->end,*((long*)&magic[4]));
 
-    sz=fread(buf,1,i32,fsrc);
-    if (sz != i32){
+    sz=fread(buf,1,i32-MAGIC_NUM_WIDTH,fsrc);
+    if ((i32 - sz) != MAGIC_NUM_WIDTH){
         printf("出错误了%ld,%d\n",sz,i32);
         fclose(fsrc);
         free(buf);
         return NULL;
     }
-
-    if(load_titles(nid,buf,i32-4)){
+    if(load_titles(nid,buf,i32-MAGIC_NUM_WIDTH)){
         fclose(fsrc);
         free(buf);
         return NULL;
@@ -121,7 +136,7 @@ int nameid_print1(struct st_nameid *nid,struct BUFFER *sbuf)
     int title_idx= (u64  >> 55)& MASK_TITLES;
     char *src=sbuf->data;
     if(title_idx >=nid->title_cnt){
-        ERROR("internal error");
+        ERRORV("标题:%d/%d,size:%d\n u64:%lx",title_idx,nid->title_cnt,size,u64);
         return -1;
     }
     fseek(nid->dbh,nid->cur+16,SEEK_SET);
@@ -155,15 +170,14 @@ int nameid_print1(struct st_nameid *nid,struct BUFFER *sbuf)
         gen="女";
     }
     printf("姓名:%s\t 身份证:\033[0;33;46m%s\033[0m 手机:%ld  性别:%s \n地址:%s\n",name,sid,((u64>>20) & MASK_MOBILE),gen,addr);
-    //printf("%d %lx,%lx\n",title_idx,u64,u64 & SHMASK_GENDER);
     
     struct STRS *other=strs_load((const uint8_t *)src,&num);
     if (other==NULL){
         ERROR_WRAP();
         return -1;
     }
-    struct STRS *title=nid->titles[title_idx];
 #if 1
+    struct STRS *title=nid->titles[title_idx];
     for (int ix=0;ix<title->size;ix++){
         printf("%s:\033[0;36m%s\033[m\n",title->strs[ix],other->strs[ix]);
     }
