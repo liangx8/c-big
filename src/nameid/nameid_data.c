@@ -91,7 +91,7 @@ struct st_nameid *new_nameid(const char *dbn)
     nid->dbh=fsrc;
     nid->cur=0L;
     free(buf);
-    printf("title count:%d\n",nid->title_cnt);
+    CP_MSG("title count:%d\n",nid->title_cnt);
     rewind(fsrc);
     if(fread((char *)(&nid->lead[0]),8,2,fsrc)<2){
         fclose(fsrc);
@@ -129,6 +129,63 @@ byte 8 - 15 身份证号
 #define GENDER_MALE    (((uint64_t)1) << 62)
 #define GENDER_FEMALE  (((uint64_t)2) << 62)
 #define SHMASK_GENDER  (((uint64_t)3) << 62)
+
+
+int nameid_verify(struct st_nameid *nid,struct BUFFER *sbuf)
+{
+    uint64_t u64=nid->lead[0];
+    uint32_t size= u64 & MASK_SIZE;
+    int title_idx= (u64  >> 55)& MASK_TITLES;
+    char *src=sbuf->data;
+    if(title_idx >=nid->title_cnt){
+        ERRORV("标题:%d/%d,size:%d\n u64:%lx",title_idx,nid->title_cnt,size,u64);
+        return -1;
+    }
+    fseek(nid->dbh,nid->cur+16,SEEK_SET);
+    long num=fread(src,1,size,nid->dbh);
+    if ((long)size != num){
+        ERROR("internal error");
+        return -1;
+    }
+    char *dst=src + size;
+    int scnt=0;
+    uint64_t part=tr_str(dst,src);
+    if(part==0){
+        ERROR_WRAP();
+        return -1;
+    }
+    
+    char *addr=dst + pa1(part);
+    scnt +=pa2(part);
+    part = tr_str(addr,src+scnt);
+    if(part==0){
+        ERROR_WRAP();
+        return -1;
+    }
+    scnt +=pa2(part);
+    if (scnt > 800){
+        ERRORV("程序有错误%d",scnt);
+        return -1;
+    }
+    char *sid=addr+ pa1(part);
+    chinaid(sid,nid->lead[1]);
+//    printf("姓名:%s\t 身份证:\033[0;33;46m%s\033[0m 手机:%ld   \n地址:%s\n",dst,sid,((u64>>20) & MASK_MOBILE),addr);
+//    CP_MSG("size:%d,scnt:%d\n",size,scnt);
+    struct STRS *other=strs_load((const uint8_t *)src+scnt,&num);
+    if (other==NULL){
+        ERROR_WRAP();
+        return -1;
+    }
+#if 0
+    struct STRS *title=nid->titles[title_idx];
+    for (int ix=0;ix<title->size;ix++){
+        printf("%s:\033[0;36m%s\033[m\n",title->strs[ix],other->strs[ix]);
+    }
+#endif
+    free(other);
+    return 0;
+
+}
 int nameid_print1(struct st_nameid *nid,struct BUFFER *sbuf)
 {
     uint64_t u64=nid->lead[0];

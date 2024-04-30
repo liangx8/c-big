@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "../error_stack.h"
 
 //void hex(const char *,int);
@@ -44,11 +45,14 @@ uint64_t tr_str(char *dst,const char *src){
     uint32_t scon=0; // src consumer
     uint16_t cc=0;
     if (*src & 0x80){
-        cc= (*(src + scon) & 0x7f) * 256;
+        uint8_t u8 =*(src + scon);
+        cc= ( u8 & 0x7f) * 256;
         scon ++;
-        cc += *(src + scon);
+        u8 =*(src + scon);
+        cc += u8;
     } else {
-        cc = *(src + scon);
+        uint8_t u8 =*(src + scon);
+        cc = u8;
     }
     scon ++;
     for (int ix=0;ix<cc;ix++){
@@ -72,9 +76,11 @@ uint64_t tr_str(char *dst,const char *src){
 */
 struct strs *strs_load(const uint8_t *src,uint16_t *cum)
 {
+    // 此方法有coredump 发生
     uint16_t slen= *((uint16_t *)src);
     int scnt=2;
 
+    
     // 统计字符串
     int cnt=0;
     while(scnt<((int)slen+2)){
@@ -98,17 +104,22 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
         scnt +=u16*2;
         //printf("%s(%d)scnt:%d, %d\n",__FILE__,__LINE__,scnt,u16*2);
     }
+    //CP_MSG("check point - slen:%d,%d\n",slen,slen>500);
     if(scnt - slen != 2){
-#if 1
         ERRORV("字符串数据错误(scnt:%d,slen:%d)",scnt,slen);
-#else
-        ERROR("数据错误");
-#endif
         return NULL;
     }
     // 需要保留的空间,简单的认为muti-byte会占用3个字节
     int expected_size=(slen * 3 / 2) + (cnt+1) * sizeof(void*);
+    // if (slen > 500){
+    //     ERRORV("源长度:%d,cnt:%d,expected_size:%d\n",slen,cnt,expected_size);
+    //     return NULL;
+    // }
     char *dst=malloc(expected_size);
+    if(dst == NULL){
+        ERROR_BY_ERRNO();
+        return NULL;
+    }
     struct strs *sts=(struct strs *)dst;
     int dcnt=sizeof(void*)*(cnt+1);
     sts->num=cnt;
@@ -120,7 +131,7 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
             free(dst);
             return NULL;
         }
-        //printf("%2d[%3d][%s]\n",idx,dcnt,dst+dcnt);
+        //CP_MSG("%2d[%3d][%s]\n",idx,dcnt,dst+dcnt);
         sts->ss[idx]=dst + dcnt;
         dcnt += pa1(pa);
         scnt += pa2(pa);
@@ -132,13 +143,7 @@ struct strs *strs_load(const uint8_t *src,uint16_t *cum)
     }
     if ((scnt - slen) != 2){
         free(dst);
-#if 0
-        char *msg=malloc(256);
-        sprintf(msg,"字符串数据错误(scnt:%d,slen:%d)",scnt,slen);
-        ERROR(msg);
-#else
         ERROR("字符串数据错误");
-#endif
         return NULL;
     }
     //hex(dst,expected_size);

@@ -7,6 +7,7 @@ struct NAMEID *new_nameid(const char *);
 void nameid_close(struct NAMEID *);
 
 int nameid_print1(struct NAMEID *,void *);
+int nameid_verify(struct NAMEID *,void *);
 long nameid_next(struct NAMEID *);
 
 

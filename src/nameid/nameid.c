@@ -19,12 +19,17 @@ int app_nameid(struct STATUS *stu,struct OPTION *opt)
         ERROR_WRAP();
         return -1;
     }
-    CHECKPOINT();
+
     int seq=0;
     struct BUFFER *sb=new_buffer(2048);
+    if(sb == NULL){
+        nameid_close(ptr);
+        ERROR_WRAP();
+        return -1;
+    }
     int retval=0;
     while(1){
-        printf("seq: %8d |=======================================================\n",seq);
+
         if(nameid_print1(ptr,sb)){
             ERROR_WRAP();
             retval = -1;

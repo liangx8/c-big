@@ -76,7 +76,7 @@ cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpu
     }
 
     signal(SIGUSR1, sighandler);
-    signal(SIGINT, sighandler);
+    //signal(SIGINT, sighandler);
     signal(SIGUSR2,sighandler);
 
     int ix=0;
