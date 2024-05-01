@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "../error_stack.h"
+#include "error_stack.h"
 
 //void hex(const char *,int);
 

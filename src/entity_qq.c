@@ -1,3 +1,7 @@
+/*
+4字节qq号，接着8字节手机号，每个记录12字节
+*/
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

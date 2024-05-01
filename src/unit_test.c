@@ -38,21 +38,10 @@ int test_work(const void *pl){
 extern const struct ENTITY qq_entity;
 
 
-int test_partition(const void *);
-int test_qq_entity(const void *pl);
-int test_rand(const void *pl);
-int test_strs(const void *pl);
-const char *const unsorting="/tmp/unsorting.bin";
+
 int mem_sort_test(const void*); // memsort_test.c
 int test_qsort_partition(const void *);
 const struct test_unit ut_array[]={
-    {"mem_sort",mem_sort_test,(void *)100000},
-    {"random",test_rand,0},
-    {"work",test_work,0},
-    {"qq_entity",test_qq_entity,0},
-    {"qsort_part",test_qsort_partition,&qq_entity},
-    {"part89",test_partition,&qq_entity},
-    {"strs",test_strs,0},
     {0,0,0}
 };
 

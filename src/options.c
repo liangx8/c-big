@@ -16,7 +16,6 @@ void usage(const char *me){
     printf(usage_str,me);
 }
 
-const char *const app_id[]={"searchqq","nameid"};
 
 int populate_num(struct OPTION *ptr,char *str)
 {

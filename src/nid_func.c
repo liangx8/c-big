@@ -4,9 +4,9 @@
 #include <malloc.h>
 #include <wchar.h>
 #include <stdlib.h>
-#include "strs.h"
-#include "../error_stack.h"
-#include "../buffer.h"
+#include "nid_strs.h"
+#include "error_stack.h"
+#include "buffer.h"
 
 
 struct st_nameid{
