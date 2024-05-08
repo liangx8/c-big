@@ -11,7 +11,9 @@ struct runtime_error{
     struct runtime_error *wrap;
 };
 
+
 static struct runtime_error *s_error=NULL;
+
 
 void error_stack(const char *file,int line,const char* msg){
     struct runtime_error *rte=malloc(sizeof(struct runtime_error));

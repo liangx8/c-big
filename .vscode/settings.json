@@ -26,6 +26,10 @@
         "nameid.h": "c",
         "compare": "c",
         "cstdint": "c",
-        "format": "c"
+        "format": "c",
+        "werror.h": "c",
+        "wnameid.h": "c",
+        "wnid_strs.h": "c",
+        "wnid_meta.h": "c"
     }
 }

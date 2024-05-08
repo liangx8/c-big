@@ -17,6 +17,3 @@ void* new_buffer(long size){
     ptr->size=size;
     return buf;
 }
-void buffer_free(void *ptr){
-    free(ptr);
-}

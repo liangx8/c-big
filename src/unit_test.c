@@ -1,5 +1,7 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 #include <malloc.h>
 #include "error_stack.h"
 #include "entity.h"
@@ -21,19 +23,51 @@ const unsigned int ts_data[]={
     0xffffff00,0xfffffe00,
     0,0
 };
+void werror_no_v(const wchar_t *,int ,int ,const wchar_t *, ...);
+void werror_print(void);
+void werror_init(void);
+
+const wchar_t test[]={L'a',L'b',L'c',0};
 int test_work(const void *pl){
     char *buf=malloc(64);
+    werror_init();
     const char *fmt="number:%d";
     for(int ix=0;ix<4;ix++){
         int val=rand();
         int num=snprintf(NULL,0,fmt,val);
         snprintf(buf,num+1,fmt,val);
-        printf("%d %s\n",num,buf);
+        wprintf(L"%d %s\n",num,buf);
     }
-    ERRORV("输出文本:%d %d (%s)\n",1,2,"abc");
-    print_error_stack(stdout);
+    wprintf(L"wchar_t:%d,wchar_t[2]:%d,%d,%ls\n",sizeof(wchar_t),sizeof(wchar_t[2]),sizeof(test),test);
+    
+    werror_no_v(L"unit_test.c",43,1,L"错误码%d",1);
+    for (int ix=2;ix<18;ix++){
+        werror_no_v(L"unit_test.c",45,ix,L"错误码%d",ix);
+    }
+    werror_print();
+    free(buf);
+    uint32_t xx=-1;
+    size_t sz=xx;
+    wprintf(L"%zd bool:%zd\n",sz,sz<0);
+    xx=8;
+    sz=(size_t)xx-10;
+    wprintf(L"%zd bool:%zd\n",sz,sz<0);
+    
+
     return 0;
 }
+
+int test_rand(const void *pl)
+{
+
+    for(int ix=0;ix<10;ix++){
+        int yy=rand();
+        int zz=yy<<1;
+        wprintf(L"%10d:%16x,%16x,%11d\n",yy,yy,zz,zz);
+    }
+    return 0;
+}
+
 
 extern const struct ENTITY qq_entity;
 
@@ -42,6 +76,8 @@ extern const struct ENTITY qq_entity;
 int mem_sort_test(const void*); // memsort_test.c
 int test_qsort_partition(const void *);
 const struct test_unit ut_array[]={
+    {"rand",test_rand,0},
+    {"work",test_work,0},
     {0,0,0}
 };
 
@@ -77,16 +113,6 @@ void unit_run(const char *name)
     }
 }
 
-int test_rand(const void *pl)
-{
-
-    for(int ix=0;ix<10;ix++){
-        int yy=rand();
-        int zz=yy<<1;
-        printf("%10d:%16x,%16x,%11d\n",yy,yy,zz,zz);
-    }
-    return 0;
-}
 
 void hex(char *buf,int total)
 {

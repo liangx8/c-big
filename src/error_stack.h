@@ -15,6 +15,6 @@ int has_error(void);
 
 
 
-#define CP_MSG(fmt,args...) printf("%s(%3d): " fmt ,__FILE__,__LINE__,args)
-#define CHECKPOINT() CP_MSG("%s (%d)\n","check point", __COUNTER__)
+#define CP_MSG(fmt,args...) wprintf(L"%s(%3d): " fmt ,__FILE__,__LINE__,args)
+#define CHECKPOINT() CP_MSG("%ls (%d)\n",L"check point", __COUNTER__)
 #endif

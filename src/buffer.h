@@ -5,5 +5,5 @@ struct BUFFER{
     char data[];
 };
 struct BUFFER *new_buffer(long);
-void buffer_free(struct BUFFER*);
+
 #endif
