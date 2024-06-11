@@ -46,7 +46,7 @@ void parse(int argc, char *const argv[], struct OPTION *data)
     data->offset=0;
     data->action=SORT;
     data->app=NULL;
-    while ((opt = getopt(argc, argv, "A:n:hG:f:t:T:l:o:b")) != -1)
+    while ((opt = getopt(argc, argv, "A:n:hG:f:tT:l:o:b")) != -1)
     {
         switch (opt)
         {
@@ -69,14 +69,7 @@ void parse(int argc, char *const argv[], struct OPTION *data)
             }
             break;
         case 't':
-            if(populate_num(data,optarg)){
-                printf("参数错误");
-                data->offset=0;
-                data->limit=0;
-                data->action=-1;
-            }else {
-                data->action = IS_SORTED;
-            }
+            data->action = TEST_PART;
             break;
         case 'l':
             if(data->action == SORT){
@@ -86,8 +79,10 @@ void parse(int argc, char *const argv[], struct OPTION *data)
             if (data->limit==0)data->limit=20;
             break;
         case 'o':
-            data->action = LIST;
-            data->offset = atoi(optarg);
+            if(data->action == SORT){
+                data->action = LIST;
+            }
+            data->offset = atol(optarg);
             break;
         case 'f':
             data->offset=atoi(optarg);

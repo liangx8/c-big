@@ -1,7 +1,7 @@
 #ifndef WERROR_H_HKSDLK34JKK32
 #define WERROR_H_HKSDLK34JKK32
 #include <wchar.h>
-
+#include <errno.h>
 void werror_no_v(const wchar_t *,int,int,const wchar_t *, ...);
 void werror_print(void);
 void werror_init(void);

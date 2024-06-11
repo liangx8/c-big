@@ -1,15 +1,13 @@
 #ifndef BAG_H_3K34JK33L
 #define BAG_H_3K34JK33L
 struct Bag;
-struct Bag *bag_create      (void);
-struct Bag *bag_with_array  (const long *,int);
-void bag_free               (struct Bag *);
-int bag_get                 (struct Bag *,long *);
-int bag_put2                (struct Bag *,long,long);
-int bag_print               (struct Bag *,void *out,int limit);
-int bag_put                 (struct Bag *,long);
-int bag_exist               (struct Bag *,long);
-long *bag_array             (struct Bag *,int *);
+struct Bag *bag_with_array (const long *,int);
+void bag_free              (struct Bag *);
+int bag_get                (struct Bag *,long *);
+int bag_put2               (struct Bag *,long,long);
+int bag_print              (struct Bag *,void *out,int limit);
+int bag_array              (struct Bag *,long **);
+int bag_num              (struct Bag *);
 
 /*
 struct MutexPairs;

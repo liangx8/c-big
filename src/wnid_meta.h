@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdint.h>
 struct WNAMEID{
+    size_t total;
     FILE *dbh;
     long cur;
     long end;
-    uint64_t total;
     void *subtitles;
     /* 每个记录有１６个字节开头，定义如下
         byte 0 - 7
@@ -16,9 +16,10 @@ struct WNAMEID{
         bit[62:63] 2性别
         byte 8 - 15 身份证号 */
     //uint64_t lead[2];
-    void *cur_raw;
-    size_t raw_max;
 };
+
+#define INDEX_BY_ID   1
+#define INDEX_BY_NAME 2
 
 #define MASK_SIZE   0xfffff
 #define MASK_MOBILE 0x7ffffffff

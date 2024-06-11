@@ -16,16 +16,15 @@ struct timespec中的tv_nsec最大值为 999999999,即单位是纳秒
 /**
  * @brief 获得当前时间
  * @param tm 必须是非空的指针，函数不对该指针做非空判断
- * @return 0成功，-1失败
+ * @return 0失败,非0，当前实际戳
  */
-int now(long *tm){
+long now(){
     struct timespec ts;
     if(clock_gettime(CLOCK_REALTIME,&ts)==-1){
         WERRNO(errno);
-        return -1;
+        return 0;
     }
-    *tm=(ts.tv_sec *NANO_MASK) + ts.tv_nsec;
-    return 0;
+    return (ts.tv_sec *NANO_MASK) + ts.tv_nsec;
 }
 const char *fmt_dhms="%dday %02d:%02d:%02d %ld";
 const char *fmt_hms="%02d:%02d:%02d %ld";

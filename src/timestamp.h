@@ -5,6 +5,6 @@
 #define U_SECOND 1000
 #define N_SECOND 1
 
-int now(long *tm);
+long now(void);
 int timestamp_str(char*,long);
 #endif 

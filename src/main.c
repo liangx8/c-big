@@ -7,9 +7,10 @@
 #include <string.h>
 #include <locale.h>
 #include "werror.h"
-#include "entity.h"
 #include "options.h"
 #include "timestamp.h"
+#include "action_const.h"
+
 
 //#include "test_item.h"
 
@@ -24,15 +25,29 @@ const struct APP_MAP amap[]={
     {0,0}
 };
 
-
+int action;
 int cpunum;
 
 void sighandler(int signum);
 void full_path(char *,const char *);
-void unit_run(const char*);
+void unit_run(const char *,const void *);
 
 void sighandler(int sig)
-{}
+{
+    switch(sig){
+        case SIGINT:
+        action=ACTION_INT;
+        break;
+        case SIGUSR1:
+        action=ACTION_PROGRESS1;
+        break;
+        case SIGUSR2:
+        action=ACTION_PROGRESS2;
+        break;
+        default:
+        action=0;
+    }
+}
 
 int main(int argc,char *const argv[])
 {
@@ -43,9 +58,11 @@ int main(int argc,char *const argv[])
     setlocale(LC_ALL,"zh_CN.UTF-8");
     cpunum=sysconf(_SC_NPROCESSORS_ONLN);
     werror_init();
-    if (now(&tm) == -1)
+    tm=now();
+    if (tm == 0)
     {
         werror_print();
+        return -1;
     }
     timestamp_str(tmstr, tm);
     wprintf(
@@ -55,15 +72,13 @@ pid:                                  \033[0;31;47m%d\033[0m\n\
 cpu:                                  \033[1;35m%d\033[0m\n", tm, tmstr, pid,cpunum);
 
     parse(argc, argv, &opt);
-    
-
     signal(SIGUSR1, sighandler);
-    //signal(SIGINT, sighandler);
+    signal(SIGINT, sighandler);
     signal(SIGUSR2,sighandler);
 
     int ix=0;
     if(opt.action==UNIT_TEST){
-        unit_run(opt.testname);
+        unit_run(opt.testname,(const void *)(opt.offset));
         return 0;
     }
     if(opt.app){

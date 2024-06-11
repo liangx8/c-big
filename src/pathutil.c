@@ -4,19 +4,49 @@
 #include <malloc.h>
 #include <stdint.h>
 #include <sys/stat.h>
-#include "error_stack.h"
+#include <libgen.h>
+#include "werror.h"
+#include "app_path.h"
 
-/**
- * @brief 返回路径
- * @return always 0
- */
-int full_path(char *buf, const char *str)
+struct APP_PATH *path_info_new(const char *src)
 {
-    char *prefix = getenv("HOME");
-    strcpy(buf, prefix);
-    strcat(buf, "/");
-    strcat(buf, str);
-    return 0;
+    struct APP_PATH *pi=malloc(sizeof(struct APP_PATH));
+    pi->preform_src=src;
+    return pi;
+}
+const char *breakinfo_name="breakinfo.json";
+void path_info_dst(struct APP_PATH *pi,const char *dst)
+{
+    char *a_root=strdup(pi->preform_src);
+    char *root=dirname(a_root);
+    int rootlen=strlen(root);
+    if (a_root == root){
+        // 当preform_src是一个相对路径时，dirname返回".",这是一个与源不同的地址
+        root[rootlen]='/';
+        rootlen++;
+        root[rootlen]='\0';
+    } else {
+        root=a_root;
+        root[0]='\0';
+        rootlen=0;
+    }
+    int len=rootlen+strlen(dst)+1;
+    pi->preform_dst = malloc(len);
+    strcpy(pi->preform_dst,root);
+    strcat(pi->preform_dst,dst);
+    
+    len=strlen(breakinfo_name);
+    pi->preform_break_info=malloc(rootlen+len+1);
+    strcpy(pi->preform_break_info,root);
+    strcat(pi->preform_break_info,breakinfo_name);
+    pi->dst=dst;
+    free(a_root);
+}
+void path_info_free(struct APP_PATH *pi)
+{
+    free(pi->preform_dst);
+    free(pi->preform_break_info);
+    free(pi);
 }
 void repeat(FILE *out,int ch,int cnt)
 {
@@ -39,32 +69,4 @@ off_t filesize(const char *path)
         return st.st_size;
     }
 }
-size_t copy(const char *dst, const char *src, size_t size)
-{
-    FILE *fsrc=fopen(src,"r");
-    if(fsrc==NULL){
-        ERROR_BY_ERRNO();
-        return 0;
-    }
-    FILE *fdst=fopen(dst,"w+");
-    if(fdst==NULL){
-        ERROR_BY_ERRNO();
-        fclose(fsrc);
-        return 0;
-    }
-    size_t cnt=0;
-    while(1){
-        if(cnt==size){
-            break;
-        }
-        int c=fgetc(fsrc);
-        if(c==EOF){
-            break;
-        }
-        fputc(c,fdst);
-        cnt++;
-    }
-    fclose(fsrc);
-    fclose(fdst);
-    return cnt;
-}
+
