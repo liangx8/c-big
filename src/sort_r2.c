@@ -1,3 +1,8 @@
+/*备忘，思路比较混乱。先放下，理顺在继续
+-A nameid -o 0 -l 1 这个功能已经实现。
+后面考虑如何能最大的榨取ＣＰＵ的能力
+*/
+
 #include <stdio.h>
 #include <errno.h>
 #include <malloc.h>
@@ -29,25 +34,20 @@ struct sort_status{
 
 extern int cpunum;
 extern int action;
-int is_order(char *data,size_t total, int us,int (*lt)(const void *,const void *))
+int is_order(char *data,size_t total, const struct ENTITY *ent)
 {
+    const int us=ent->unitsize;
     for(long lx=0;lx<total-1;lx++){
         char *ptrl=data + lx * us;
         char *ptrr=data + (lx + 1) * us;
-        if(lt(ptrr,ptrl)){
+        if(ent->lt(ptrr,ptrl)){
             long start=lx-5;
             if (start < 0){
                 start=0;
             }
             for (;start < lx+5;start++){
-                int *pint=(int *)(data+(start * us));
-                if(start == lx || start == lx+1){
-                    wprintf(L"\033[0;35m");
-                }
-                wprintf(L"%ld/%ld:%d",start,total,*pint);
-                if(start == lx || start == lx+1){
-                    wprintf(L"\033[0m");
-                }
+                char *pint=data+start * us;
+                ent->print(start,pint,NULL);
                 wprintf(L"\n");
             }
             return 0;
@@ -121,7 +121,6 @@ void *task(void *obj)
     const wchar_t *exit_msg;
     pthread_mutex_lock(ss->mut);
     while(1){
-        //wprintf(L"任务%2d 锁定\n",id);
         if(!ss->run){
             exit_msg=L"用户中断，当前任务%2d退出\n";
             break;
@@ -155,7 +154,6 @@ void *task(void *obj)
             }
             if(rv-mid >2){
                 if(newJob){
-                    wprintf(L"task%2d:[%8ld,%8ld]=%8ld=%4d\n",id,mid,rv,rv-mid,bag_num(ss->jobs));
                     pthread_mutex_lock(ss->mut);
                     if(bag_put2(ss->jobs,mid+1,rv)){
                         exit_msg=L"内部错误，当前任务%2d退出\n";
@@ -236,7 +234,7 @@ int sort_big_mem(const struct ENTITY *ent,char *data,struct break_info *bi,long 
             for(int ix=0;ix<cpunum;ix++){
                 long *pl=&working[ix*2];
                 if(*pl  || *(pl+1)){
-                    wprintf(L"任务:%2d [%8ld,%8ld]\n",ix,*pl,*(pl+1));
+                    CP_MSG(L"任务:%2d [%8ld,%8ld]\n",ix,*pl,*(pl+1));
                 }
             }
             default:
@@ -246,7 +244,7 @@ outer_break:
     for(int ix=0;ix<cpunum;ix++){
         pthread_join(pid[ix],NULL);
     }
-    if(is_order(data,size,ent->unitsize,ent->lt)){
+    if(is_order(data,size,ent)){
         wprintf(L"OK\n");
     } else {
         wprintf(L"\033[0;35m没有正确排序\033[0m\n");
@@ -302,6 +300,7 @@ int sort_part(const struct ENTITY *ent,struct APP_PATH *ap)
         return -1;
     }
     wprintf(L"完整读取排序数据\n");
+    CP_MSG(L"总共:%ld\n",total/us);
     if(sort_big_mem(ent,data,bi,total/us)){
         werror_print();
     }

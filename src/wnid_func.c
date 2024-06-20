@@ -12,9 +12,6 @@ struct titles{
 };
 
 struct BUFFER *new_buffer(int size);
-int load_wstr(wchar_t *,struct BUFFER *);
-
-struct wstrs* load_wstrs(struct BUFFER *);
 
 
 off_t filesize(const char *path);
@@ -24,7 +21,11 @@ off_t filesize(const char *path);
 #define MAGIC_NUM_WIDTH 12
 
 int calc_strss(const char *buf,uint32_t size);
-
+struct wstrs *get_title(struct WNAMEID* wnid,int idx)
+{
+    struct titles *ttls=(struct titles*)wnid->subtitles;
+    return ttls->titles[idx];
+}
 struct titles* load_titles(FILE *fsrc,long offset){
 
     if(fseek(fsrc,-offset,SEEK_END)){
@@ -46,16 +47,17 @@ struct titles* load_titles(FILE *fsrc,long offset){
     } else {
         CP_MSG(L"有%d组标题\n",title_cnt);
     }
+    struct titles *ttls=malloc(8 + title_cnt * 8);
+    ttls->count=title_cnt;
     for(int ix=0;ix<title_cnt;ix++){
         struct wstrs *wss=load_wstrs(src);
         if(wss){
-            for(int ix=0;ix<wss->cnt;ix++){
-                wprintf(L"%ls\n",wss->str);
-            }
+            ttls->titles[ix]=wss;
         }
     }
+    
     free(src);
-    return NULL;
+    return ttls;
 }
 
 
@@ -115,6 +117,11 @@ int wnid_close(struct WNAMEID *wnid)
         wprintf(L"关闭文件错误：%s\n",strerror(errno));
         return -1;
     }
+    struct titles *ttl= wnid->subtitles;
+    for(int ix=0;ix<ttl->count;ix++){
+        free(ttl->titles[ix]);
+    }
+    free(ttl);
     free(wnid);
     return 0;
 }

@@ -17,7 +17,9 @@ int wnid_list(struct APP_PATH *ap,const struct ENTITY *ent,long offset,int limit
     fseek(fidx,(offset+1) * ent->unitsize,SEEK_SET);
     for(int ix=0;ix<limit;ix++){
         fread(&idx[0],ent->unitsize,1,fidx);
-        ent->print(offset+ix,idx,wnid);
+        if(ent->print(offset+ix,idx,wnid)){
+            return -1;
+        }
     }
 
     fclose(fidx);

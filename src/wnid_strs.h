@@ -12,6 +12,10 @@ struct wstrs{
     const wchar_t *str[];
 };
 
+int load_wstr(wchar_t *,struct BUFFER *);
+
+struct wstrs* load_wstrs(struct BUFFER *);
+
 
 
 #endif

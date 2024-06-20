@@ -83,6 +83,7 @@ int test_thread(const void *);
 int test_apart2(const void *);
 int test_libsort(const void *);
 int test_wstr(const void *);
+int meaningless(const void *);
 const struct test_unit ut_array[]={
     {"rand",test_rand},
     {"work",test_work},
@@ -94,6 +95,7 @@ const struct test_unit ut_array[]={
     {"apart2",test_apart2},
     {"libsort",test_libsort},
     {"wstr",test_wstr},
+    {"ml",meaningless},
     {0,0}
 };
 
