@@ -18,7 +18,7 @@ SRCS=$(wildcard *.c nameid/*.c)
 #SRCS=$(shell find . -name \*.c -and -type f)
 OBJS=${SRCS:.c=.o}
 LDFLAGS:=-Wall
-LDFLAGS+=$(shell pkgconf --libs jansson)
+#LDFLAGS+=$(shell pkgconf --libs jansson)
 #LDFLAGS+= -static
 
 all:${TARGET}
