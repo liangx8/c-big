@@ -15,15 +15,12 @@ struct runtime_error{
 };
 
 static struct runtime_error *s_error=NULL;
-static struct bufmgr{
-    long used;
-    void *ptr;
-} *mgr;
+long *mgr;
 
 void error_init(void)
 {
     mgr=malloc(BUF_SIZE);
-    mgr->used=sizeof(struct bufmgr);
+    *mgr=sizeof(long);
 }
 void error_release()
 {
@@ -32,8 +29,8 @@ void error_release()
 
 void error_stack(const char *file,int line,const wchar_t *msg){
     
-    struct runtime_error *rte=mgr->ptr+mgr->used;
-    mgr->used +=sizeof(struct runtime_error);
+    struct runtime_error *rte=(void *)mgr+*mgr;
+    *mgr +=sizeof(struct runtime_error);
     rte->file=file;
     rte->line=line;
     rte->msg=msg;
@@ -45,26 +42,24 @@ void error_stack_v(const char *file,int line,const wchar_t* fmt, ...)
 
     va_list ap;
     wchar_t *msg;
-    msg=mgr->ptr+mgr->used;
+    msg=(void *)mgr+*mgr;
     va_start(ap,fmt);
-    int num=vswprintf(msg,BUF_SIZE-mgr->used,fmt,ap);
+    int num=vswprintf(msg,BUF_SIZE-*mgr,fmt,ap);
     va_end(ap);
     if(num>=0){
-        mgr->used += (num+1)*sizeof(wchar_t);
+        *mgr += (num+1)*sizeof(wchar_t);
         *(msg+num)=L'\0';
         error_stack(file,line,msg);
     }
 }
 
 void error_stack_by_errno(const char *file,int line){
-#if 0
+
     struct runtime_error *rte=malloc(sizeof(struct runtime_error));
     rte->file=file;
     rte->line=line;
-    rte->msg=strerror(errno);
-    rte->wrap=s_error;
-    s_error=rte;
-#endif
+    const char *msg=strerror(errno);
+    error_stack_v(file,line,L"%s",msg);
 }
 
 void print_error_stack(FILE *out){

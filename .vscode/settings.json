@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "bufmgr.h": "c",
-        "sort_range.h": "c"
+        "sort_range.h": "c",
+        "sort_conf.h": "c",
+        "error_stack.h": "c"
     }
 }
