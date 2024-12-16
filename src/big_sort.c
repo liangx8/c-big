@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <wchar.h>
+#include <malloc.h>
 #include "error_stack.h"
 #include "entity.h"
 
-#ifndef NULL
-#define NULL (void*)0
-#endif
+
 
 extern const struct Entity chinaid_entity;
 
@@ -13,21 +12,14 @@ extern const struct Entity chinaid_entity;
 const struct Entity *entities[]={&chinaid_entity};
 
 
-int loadTag(const char *db,char tag[])
+int loadTag(FILE *dbf,char tag[])
 {
-    FILE *dbf=fopen(db,"r");
-    if(dbf==NULL){
-        ERROR_BY_ERRNO();
-        return -1;
-    }
     fseek(dbf,-16,SEEK_END);
     int res=fread(tag,16,1,dbf);
     if (res != 1){
         ERROR(L"１６个字节都读不出来");
-        fclose(dbf);
         return -1;
     }
-    fclose(dbf);
     return 0;
 }
 
@@ -40,14 +32,33 @@ int loadTag(const char *db,char tag[])
 void bigsort(const char *dbname)
 {
     char tag[16];
-    loadTag(dbname,tag);
-    for(int ix=0;ix<16;ix++){
-        putwchar(tag[ix]);
+    FILE *dbf=fopen(dbname,"r");
+    if(dbf==NULL){
+        ERROR_BY_ERRNO();
+        return;
     }
-    putwchar(L'\n');
-    for(int ix=0;ix<16;ix++){
-        putwchar(entities[0]->tag[ix]);
+    if(loadTag(dbf,tag)){
+        fclose(dbf);
+        return;
     }
-    putwchar(L'\n');
+    for(int ix=0;ix<1;ix++){
+        int same=1;
+        for(int iy=0;iy<16;iy++){
+            if(entities[ix]->tag[iy]!=tag[iy]){
+                same=0;
+                break;
+            }
+        }
+        if(same){
+            char *buf;
+            wprintf(entities[ix]->remark);
+            putwchar(L'\n');
+            struct db *ndb=entities[ix]->index(dbf,&buf);
+            entities[ix]->print(ndb,NULL);
+            wprintf(L"释放内存\n");
+            free(buf);
+        }
+    }
     
+    fclose(dbf);
 }
