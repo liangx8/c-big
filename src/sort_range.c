@@ -71,4 +71,31 @@ int rng_pop(struct RANGES *rgs,long *l1,long *l2)
 
     return cnt+idx;
 }
-
+int rng_release(struct RANGES *rgs)
+{
+    struct RANGES *ptr;
+    while(rgs){
+        ptr=rgs->next;
+        free(rgs);
+        rgs=ptr;
+    }
+    return 0;
+}
+int rng_print(struct RANGES *rgs,int limit)
+{
+    int cnt=0;
+    while(rgs){
+        long *ptr=rgs->data;
+        for(int ix=0;ix<rgs->idx;ix++){
+            wprintf(L"(%9ld,%9ld)\n",*ptr,*(ptr+1));
+            ptr ++;
+            ptr ++;
+            cnt++;
+            if(cnt>=limit){
+                return 0;
+            }
+        }
+        rgs=rgs->next;
+    }
+    return 0;
+}
