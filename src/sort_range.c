@@ -92,6 +92,7 @@ int rng_print(struct RANGES *rgs,int limit)
             ptr ++;
             cnt++;
             if(cnt>=limit){
+                wprintf(L"...\n");
                 return 0;
             }
         }

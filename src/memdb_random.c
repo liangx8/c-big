@@ -21,10 +21,10 @@ int rd_close(struct MEMDB *db)
     return 0;
 }
 const struct ENTITY rd_entity={
-    (int (*)(const void*,const void*)) id_lt,
-    (int (*)(const void*,const void*)) id_cmp,
-    (int (*)(void *,const void *,long))     rd_print,
-    (int (*)(void *))                  rd_close,
+    (CMP)                               id_lt,
+    (CMP)                               id_cmp,
+    (int (*)(void *,const void *,long)) rd_print,
+    (int (*)(void *))                   rd_close,
     //L"居民身份证查询数据库",
     8
 

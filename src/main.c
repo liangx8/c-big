@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     env.pid=getpid();
     wprintf(L"cpu number: %d\nTask \033[0;31;47m%d\033[0m\n",env.cpunum,env.pid);
     if(argc>1){
-        db=random_db(1000);
+        db=random_db(1000000);
     } else {
         db=loaddb("/home/com/big-data/chinaid/nameid.bin");
     }

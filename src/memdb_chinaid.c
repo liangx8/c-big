@@ -45,8 +45,8 @@ int id_close(struct _db_payload *pl)
     return 0;
 }
 const struct ENTITY chinaid_entity={
-    (int (*)(const void*,const void*))  id_lt,
-    (int (*)(const void*,const void*))  id_cmp,
+    (CMP)                               id_lt,
+    (CMP)                               id_cmp,
     (int (*)(void *,const void *,long)) id_print,
     (int (*)(void *))                   id_close,
     //L"居民身份证查询数据库",

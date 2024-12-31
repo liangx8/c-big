@@ -1,9 +1,10 @@
 #pragma once
 
+typedef int (*CMP) (const void *,const void *);
 
 struct ENTITY{
-    int (*lt)    (const void *p1,const void *p2);
-    int (*cmp)   (const void *p1,const void *p2);
+    CMP lt;
+    CMP cmp;
     int (*print) (void *pl,const void *p,long seq);
     int (*close) (void *pl);
     const int    unitsize;
