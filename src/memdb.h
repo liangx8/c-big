@@ -5,7 +5,7 @@ typedef int (*CMP) (const void *,const void *);
 struct ENTITY{
     CMP lt;
     CMP cmp;
-    int (*print) (void *pl,const void *p,long seq);
+    int (*print) (const void *pl,long seq);
     int (*close) (void *pl);
     const int    unitsize;
 };

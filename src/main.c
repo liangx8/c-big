@@ -36,6 +36,8 @@ int main(int argc, char **argv)
     signal(SIGUSR2,signalhandler);
     signal(SIGINT,signalhandler);
     bigsort(db);
+    for(long lx=0;lx<300;lx++)
+        db->entity->print(db->payload,lx);
     db->entity->close(db->payload);
     error_release();
     wprintf(L"program exit\n");

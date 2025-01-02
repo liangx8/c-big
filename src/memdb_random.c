@@ -8,9 +8,10 @@
 
 int id_lt(const unsigned long*,const unsigned long*);
 int id_cmp(const unsigned long*,const unsigned long*);
-int rd_print(void * _,const unsigned long* val,long seq)
+int rd_print(const struct MEMDB *db,long seq)
 {
-    wprintf(L"%8ld:%10ld\n",seq,*val);
+    long *ptr=(long*)(db->raw+seq * sizeof(long));
+    wprintf(L"%8ld:%10ld\n",seq,*ptr);
     return 0;
 }
 int rd_close(struct MEMDB *db)
@@ -21,10 +22,10 @@ int rd_close(struct MEMDB *db)
     return 0;
 }
 const struct ENTITY rd_entity={
-    (CMP)                               id_lt,
-    (CMP)                               id_cmp,
-    (int (*)(void *,const void *,long)) rd_print,
-    (int (*)(void *))                   rd_close,
+    (CMP)                        id_lt,
+    (CMP)                        id_cmp,
+    (int (*)(const void *,long)) rd_print,
+    (int (*)(void *))            rd_close,
     //L"居民身份证查询数据库",
     8
 
