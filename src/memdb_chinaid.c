@@ -30,9 +30,10 @@ void id_str(long id,wchar_t str[]);
  * @param pl 包含创建到内存，大小等信息
  * @param row 由２个元素组成,0是身份证，1是数据在数据库中的偏移
  */
-int id_print (struct _db_payload *pl,const long *row,long seq)
+int id_print (struct _db_payload *pl,long seq)
 {
     wchar_t id18[19];
+    long *row=(long*)(pl->buf+seq*UNITSIZE);
     id_str(*row,id18);
     wprintf(L"%ld:%ls,%ld\n",seq,id18,*(row+1));
     return 0;
@@ -47,7 +48,7 @@ int id_close(struct _db_payload *pl)
 const struct ENTITY chinaid_entity={
     (CMP)                               id_lt,
     (CMP)                               id_cmp,
-    (int (*)(void *,const void *,long)) id_print,
+    (int (*)(const void *,long)) id_print,
     (int (*)(void *))                   id_close,
     //L"居民身份证查询数据库",
     UNITSIZE

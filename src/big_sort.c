@@ -12,7 +12,7 @@
 const struct timespec MS1   = {0, 100000000};
 const struct timespec NS100 = {0, 1000000};
 
-int debug_print;
+int debug_print=-50;
 struct sort_mgr{
     pthread_cond_t      *cond;
     pthread_mutex_t     *mutex;
@@ -33,7 +33,7 @@ void signalhandler(int signum)
         return;
     }
     if(signum==SIGUSR2){
-        debug_print=1;
+        
         return;
     }
     pthread_mutex_lock(smr.mutex);
@@ -48,24 +48,24 @@ void signalhandler(int signum)
     pthread_mutex_unlock(smr.mutex);
 }
 
-long partion(void *base,const struct ENTITY *ent,long p1,long p2){
-    // 条件p2 - p1 > 1必须成立,在调用此函数时检查
+long partion(void *base,const struct ENTITY *ent,long l1,long l2){
     const int incrment=ent->unitsize;
     char store[incrment];
-    if(p1+2==p2){
-        void *pp1=smr.data + p1 * incrment;
-        void *pp2=smr.data + p2 * incrment;
+    // 条件l2 - l1 > 1必须成立,在调用此函数时检查
+    if(l1+2==l2){
+        void *pp1=smr.data + l1 * incrment;
+        void *pp2=pp1 + incrment;
         if(smr.ent->lt(pp1,pp2)){
             
             memcpy(store,pp1,incrment);
             memcpy(pp1,pp2,incrment);
             memcpy(pp2,store,incrment);
         }
-        return p1+1;
+        return l1+1;
     }
     
-    long store_idx=p1;
-    void *povit=base+(p2-1) * incrment;
+    long store_idx=l1;
+    void *povit=base+(l2-1) * incrment;
     void *pstore;
     while(1){
         pstore=base + (store_idx*incrment);
@@ -77,7 +77,7 @@ long partion(void *base,const struct ENTITY *ent,long p1,long p2){
     }
 
     memcpy(store,pstore,incrment);
-    for(long ix=store_idx+1;ix<p2-1;ix++){
+    for(long ix=store_idx+1;ix<l2-1;ix++){
         void *pix=base + ix * incrment;
         if(ent->lt(pix,povit)){
             memcpy(pstore,pix,incrment);
@@ -122,13 +122,16 @@ void *task(void *arg)
             pthread_cond_wait(smr.cond,smr.mutex);
             continue;
         }
+        if(debug_print<0){
+            CP_MSG(L"takes job (%2d):%ld,%ld\n",id,l1,l2);
+        }
         pthread_mutex_unlock(smr.mutex);
         while(smr.run){
             *(smr.works+id *2)=l1;
             *(smr.works+id *2+1)=l2;
             long povit=partion(smr.data,smr.ent,l1,l2);
-            if(debug_print){
-                debug_print=0;
+            if(debug_print<0){
+                debug_print++;
                 CP_MSG(L"partition result(%2d):%ld,%ld,%ld\n",id,l1,povit,l2);
             }
             if(povit - l1 > 1){
@@ -186,9 +189,5 @@ void bigsort(struct MEMDB *db)
         pthread_join(*(pid+ix),&retv);
         wprintf(L"task %2d is done\n",(int)(long)retv);
     }
-    
-
-    rng_print(db->scops,10);
-    CP_MSG(L"continue%s","\n");
 
 }

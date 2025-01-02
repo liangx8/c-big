@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     setlocale(LC_ALL,"");
     env.cpunum=sysconf(_SC_NPROCESSORS_ONLN);
     env.pid=getpid();
-    wprintf(L"cpu number: %d\nTask \033[0;31;47m%d\033[0m\n",env.cpunum,env.pid);
+    wprintf(L"cpu number: %d\n       PID: \033[0;31;47m%d\033[0m\n",env.cpunum,env.pid);
     if(argc>1){
         db=random_db(1000000);
     } else {
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     signal(SIGUSR2,signalhandler);
     signal(SIGINT,signalhandler);
     bigsort(db);
-    for(long lx=0;lx<300;lx++)
+    for(long lx=280;lx<300;lx++)
         db->entity->print(db->payload,lx);
     db->entity->close(db->payload);
     error_release();
