@@ -35,7 +35,7 @@ int id_print (struct _db_payload *pl,long seq)
     wchar_t id18[19];
     long *row=(long*)(pl->buf+seq*UNITSIZE);
     id_str(*row,id18);
-    wprintf(L"%ld:%ls,%ld\n",seq,id18,*(row+1));
+    wprintf(L"%ld:id(%ls),%18ld,%ld\n",seq,id18,*row,*(row+1));
     return 0;
 }
 int id_close(struct _db_payload *pl)

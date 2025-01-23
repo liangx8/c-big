@@ -18,7 +18,7 @@ struct sort_mgr{
     pthread_mutex_t     *mutex;
     long                *works;
     struct RANGES       *scope;
-    void                *data;
+    void                *data;     // 要排序的数据
     const struct ENTITY *ent;
     long                 run;
 };
@@ -53,9 +53,9 @@ long partion(void *base,const struct ENTITY *ent,long l1,long l2){
     char store[incrment];
     // 条件l2 - l1 > 1必须成立,在调用此函数时检查
     if(l1+2==l2){
-        void *pp1=smr.data + l1 * incrment;
+        void *pp1=base + l1 * incrment;
         void *pp2=pp1 + incrment;
-        if(smr.ent->lt(pp1,pp2)){
+        if(ent->lt(pp2,pp1)){
             
             memcpy(store,pp1,incrment);
             memcpy(pp1,pp2,incrment);
