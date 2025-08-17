@@ -8,3 +8,8 @@ sysconf(_NPROCESSORS_ONLN) The number of processors currently online see also ge
     #progma pack(n)
 # pthread_cond_wait()
 能够被同线程的pthread_cond_signal()唤醒，例如signal handler是抢夺了当前的线程到执行。可以理解为与当前线程是相同到。在handler中使用pthread_cond_signal能唤醒同线程下到pthread_cond_wait()
+
+# 路径操作的函数
+    mkdir() man3
+    opendir() man3
+    stat()   man2

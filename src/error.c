@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#define BUF_SIZE 2048
+#define BUF_SIZE 4096
 
 struct runtime_error{
     const char *file;
@@ -55,9 +55,6 @@ void error_stack_v(const char *file,int line,const wchar_t* fmt, ...)
 
 void error_stack_by_errno(const char *file,int line){
 
-    struct runtime_error *rte=malloc(sizeof(struct runtime_error));
-    rte->file=file;
-    rte->line=line;
     const char *msg=strerror(errno);
     error_stack_v(file,line,L"%s",msg);
 }

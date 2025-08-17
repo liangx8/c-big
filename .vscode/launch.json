@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/big",
-            "args": ["-A","nameid", "-l 10"],
+            "args": [],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -23,7 +23,7 @@
                 },
                 {
                     "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
+                    "text": "-gdb-set disassembly-flavor att",
                     "ignoreFailures": true
                 }
             ]

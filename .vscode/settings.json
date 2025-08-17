@@ -4,6 +4,10 @@
         "sort_range.h": "c",
         "sort_conf.h": "c",
         "error_stack.h": "c",
-        "memdb.h": "c"
+        "memdb.h": "c",
+        "string.h": "c",
+        "errno.h": "c",
+        "abstract_db.h": "c",
+        "signal.h": "c"
     }
 }
