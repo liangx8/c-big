@@ -22,22 +22,21 @@ void *sort_task(void *load)
 {
     int id=(int)(long)load;
     uint64_t *idholder=smr.jobs + id * 2;
-    wprintf(L"task %2d enter\n",id);
+    log_info(L"task %2d enter\n",id);
     pthread_mutex_lock(smr.mutex);
-    int dbgcnt=0;
     while(smr.run){
 #if 1
         uint64_t l1,l2;
         if(rng_pop(smr.db->scops,&l1,&l2)){
             int all_done=1;
+            *idholder=0;
+            *(idholder+1)=0;
             for(int ix=0;ix<env.cpunum*2;ix++){
                 if(*(smr.jobs+ix)){
                     all_done=0;
                     break;
                 }
             }
-            *idholder=0;
-            *(idholder+1)=0;
             if(all_done){
                 break;
             } else {
@@ -50,10 +49,6 @@ void *sort_task(void *load)
             *idholder=l1;
             *(idholder+1)=l2;
             pthread_mutex_unlock(smr.mutex);
-            if(dbgcnt<20){
-                dbgcnt++;
-                wprintf(L"task%d working on (%lu,%lu)\n",id,l1,l2);
-            }
             uint64_t povit = _mem_partion(smr.db->raw,smr.db->entity, l1,l2);
             pthread_mutex_lock(smr.mutex);
             pick=0;
@@ -78,13 +73,13 @@ void *sort_task(void *load)
         }
 #else
         pthread_mutex_unlock(smr.mutex);
-        wprintf(L"task %2d is working...\n",id);
+        log_info(L"task %2d is working...\n",id);
         sleep(id+3);
         pthread_mutex_lock(smr.mutex);
 #endif
     }
     pthread_mutex_unlock(smr.mutex);
-    wprintf(L"task %2d is quit\n",id);
+    log_info(L"task %2d is quit\n",id);
     return NULL;
 }
 int new_signal(int *);
@@ -110,7 +105,19 @@ void mem_mult_quick_sort(struct ABSTRACT_DB *db)
         sleep(1);
         if(new_signal(&sig)){
             smr.run=0;
-            wprintf(L"main thread exit\n");
+            log_info(L"main thread exit by manual\n");
+            break;
+        }
+        int all_done=1;
+        for(int ix=0;ix<env.cpunum * 2;ix++){
+            if(jobs[ix]){
+                all_done=0;
+                break;
+            }
+        }
+        if(all_done){
+            log_info(L"排序完成\n");
+            pthread_cond_broadcast(&cond);
             break;
         }
     }

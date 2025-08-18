@@ -1,14 +1,14 @@
 #pragma once
-
+#include <wchar.h>
 typedef long (*CMP) (const void *,const void *);
 
 struct ENTITY{
-    CMP             lt;
-    CMP             cmp;
-    int           (*print)     (const void *pl,long seq);
-    int           (*close)     (void *pl);
-    unsigned long (*id)        (const void *pl,long seq);
-    const int       unitsize;
+    CMP                                          lt;
+    CMP                                          cmp;
+    typeof(int (*)(const void*,long))            print;
+    typeof(int (*)(void *))                      close;
+    typeof(unsigned long (*)(const void *,long)) id;
+    const int                                    unitsize;
 };
 struct RANGES;
 struct ABSTRACT_DB{
@@ -21,4 +21,6 @@ struct ENV{
     int cpunum;
     int pid;
 };
+void log_info(const wchar_t *fmt,...);
+
 //abstract

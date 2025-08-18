@@ -7,10 +7,10 @@ struct TEST_STRUCT{
 };
 
 int test_compare(void);
-void* sample_db(void);
+void log_info(const wchar_t *fmt,...);
 int test_other(void)
 {
-    sample_db();
+    log_info(L"莫名%d\n",100);
     return 1;
 }
 const struct TEST_STRUCT all_test[]={

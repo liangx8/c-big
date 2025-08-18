@@ -12,7 +12,6 @@ void error_init(void);
 void error_release(void);
 void fatal(const char *file,int line,const wchar_t *msg);
 
-
 #define ERROR_WRAP() error_stack(__FILE__,__LINE__,L"wrap only")
 #define ERROR(m) error_stack(__FILE__,__LINE__,m)
 #define ERRORV(fmt,args...) error_stack_v(__FILE__,__LINE__,fmt,args)

@@ -25,7 +25,7 @@ uint64_t _mem_partion(void *base,const struct ENTITY *ent,uint64_t p1,uint64_t p
     uint64_t store_idx=p1;
     void *povit=base + (p2 -1) * incrment;
     void *pstore = base + (store_idx * incrment);
-    void *pix=pstore;
+    void *pix;
     while(1){
         if(ent->lt(pstore,povit)){
             store_idx++;
@@ -34,6 +34,7 @@ uint64_t _mem_partion(void *base,const struct ENTITY *ent,uint64_t p1,uint64_t p
             break;
         }
     }
+    pix=base + (store_idx * incrment);
     //将pstore的位置腾空
     memcpy(store,pstore,incrment);
 
@@ -55,12 +56,26 @@ void mem_quick_sort(struct ABSTRACT_DB *db)
 {
     uint64_t l1,l2;
     while(rng_pop(db->scops,&l1,&l2)==0){
+repeat:
         uint64_t povit_idx=_mem_partion(db->raw,db->entity,l1,l2);
+        int flag=0;
         if(povit_idx - l1 > 1){
-            rng_push(db->scops,l1,povit_idx);
+            flag=1;
+//            rng_push(db->scops,l1,povit_idx);
         }
         if(l2-povit_idx > 1){
-            rng_push(db->scops,povit_idx,l2);
+            flag = flag | 0b10;
+//            rng_push(db->scops,povit_idx,l2);
+        }
+        switch(flag){
+            case 1:
+                l2=povit_idx;
+                goto repeat;
+            case 3:
+                rng_push(db->scops,l1,povit_idx);
+            case 2:
+                l1=povit_idx;
+                goto repeat;
         }
     }
 // #if DBG1

@@ -15,7 +15,7 @@ int touch_dir(const char *dirname);
 FILE *create_or_open_file(const char *dbname);
 off_t filesize(const char *path);
 long signed_rand(void);
-#define DEV_SIZE 5000
+#define DEV_SIZE 0
 
 void generate_db(size_t size,void (*progress)(int))
 {
@@ -92,7 +92,7 @@ struct ABSTRACT_DB* sample_db(void)
     buf[namesize+4]='/';
     strcat(buf,dbfile);
     off_t size= filesize(buf);
-#ifdef DEV_SIZE
+#if DEV_SIZE
     // 开发期间限制用比较小的内容
     if(size > DEV_SIZE*12){
         size=DEV_SIZE*12;
@@ -124,6 +124,6 @@ struct ABSTRACT_DB* sample_db(void)
         return NULL;
     }
     fclose(fdb);
-    wprintf(L"几大:%ld    %ld\n",size,sizeof(off_t));
+    log_info(L"几大:%ld    %ld\n",size,sizeof(off_t));
     return base;
 }
