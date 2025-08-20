@@ -21,6 +21,6 @@ struct ENV{
     int cpunum;
     int pid;
 };
-void log_info(const wchar_t *fmt,...);
-
+// void log_info(const wchar_t *fmt,...);
+// #define log_err(fmt,args...) log_info(fmt,args)
 //abstract

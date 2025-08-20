@@ -2,9 +2,10 @@
 #include <wchar.h>
 #include <locale.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <string.h>
 #include "abstract_db.h"
-#include "error_stack.h"
+#include "log.h"
 
 #define DB_SIZE 20
 
@@ -13,13 +14,8 @@ struct ABSTRACT_DB* random_db(long size);
 void mem_quick_sort(struct ABSTRACT_DB *db);
 void mem_mult_quick_sort(struct ABSTRACT_DB *);
 void test_run(const char *);
-void generate_db(size_t size,void (*progress)(int));
-struct ABSTRACT_DB* sample_db(void);
-void pgr(int prst)
-{
-    wprintf(L"\r正在生成%3d%",prst);
-    fflush(stdout);
-}
+struct ABSTRACT_DB* sample_db(uint64_t);
+
 int main(int argc, char **argv)
 {
     setlocale(LC_ALL,"");
@@ -29,35 +25,23 @@ int main(int argc, char **argv)
     log_info(L"Task \033[0;31;47m%d\033[0m\n",env.pid);
     if(argc > 1){
         if(strncmp("test",argv[1],5)){
-            if(strncmp("gen",argv[1],4)){
-                wprintf(L"不知道做什么\n");
-                return -1;
-            }
-            generate_db(50000000,pgr);
-            //generate_db(40000000,pgr);
-            return 0;
+            wprintf(L"不知道做什么\n");
+            return -1;
         } else {
             test_run(NULL);
             return 0;
         }
     }
-    error_init();
-    struct ABSTRACT_DB *db=sample_db();
+    struct ABSTRACT_DB *db=sample_db(6000000);
     //struct ABSTRACT_DB *db=random_db(DB_SIZE);
     mem_mult_quick_sort(db);
     for(int ix=0;ix<DB_SIZE;ix++){
         db->entity->print(db,ix);
     }
-    if(has_error()){
-        print_error_stack(stdout);
-        error_release();
+    if(db->entity->close(db)){
+        log_info(L"关闭数据库错误\n");
         return -1;
     }
-    error_release();
-    for(int ix=0;ix<DB_SIZE;ix++){
-        db->entity->print(db,ix);
-    }
-    db->entity->close(db);
 
     log_info(L"program exit\n");
     return 0;

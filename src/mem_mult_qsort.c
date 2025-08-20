@@ -5,9 +5,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "abstract_db.h"
-#include "error_stack.h"
 #include "sort_range.h"
-
+#include "log.h"
 uint64_t _mem_partion(void *base,const struct ENTITY *ent,uint64_t p1,uint64_t p2); // mem_sort.c
 
 struct MANAGER{

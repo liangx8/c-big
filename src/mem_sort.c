@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <string.h> // memcpy()
 #include "abstract_db.h"
-#include "error_stack.h"
 #include "sort_range.h"
 
 #define DBG1 1
@@ -42,9 +41,9 @@ uint64_t _mem_partion(void *base,const struct ENTITY *ent,uint64_t p1,uint64_t p
         pix += incrment;
         if(ent->lt(pix,povit)){
             memcpy(pstore,pix,incrment);
-            //memcpy(pix,store,incrment);
             store_idx++;
             pstore += incrment;
+            //将pstore的位置腾空
             memcpy(pix,pstore,incrment);
         }
     }

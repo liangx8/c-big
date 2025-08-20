@@ -2,6 +2,7 @@
 #include <wchar.h>
 #include <sys/stat.h>
 #include <errno.h>
+
 /**
  * @brief 检查或者建立目录
  */
@@ -20,14 +21,7 @@ int touch_dir(const char *dirname)
     }
     return 0;
 }
-FILE *create_or_open_file(const char *name)
-{
-    FILE *fp=fopen(name,"w+");
-    if(fp==NULL){
-        wprintf(L"打开或者建立文件%s错误\n",name);
-    }
-    return fp;
-}
+
 off_t filesize(const char *path)
 {
     struct stat st;

@@ -1,6 +1,8 @@
 #include <malloc.h>
 #include <stdint.h>
-#include "error_stack.h"
+#include <stdio.h>
+#include <wchar.h>
+#include "log.h"
 #define MAX 2048
 /**
  * @brief 储存需要排序的范围
@@ -29,7 +31,7 @@ int rng_push(struct RANGES *rgs,uint64_t l1,uint64_t l2)
         rgs->idx++;
         return 0;
     }
-    ERROR(L"RANGES 超过2048");
+    log_info(L"RANGES 超过%d\n",MAX);
     return -1;
 }
 /**

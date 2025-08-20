@@ -2,7 +2,6 @@
 #include <wchar.h>
 #include <malloc.h>
 #include <stdlib.h>
-#include "error_stack.h"
 #include "abstract_db.h"
 #include "sort_range.h"
 
