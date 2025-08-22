@@ -84,6 +84,5 @@ repeat:
 // #else
 //     rng_pop(db->scops,&l1,&l2)
 // #endif
-    wprintf(L"scope(%d,%d)\n",l1,l2);
     
 }

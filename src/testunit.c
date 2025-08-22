@@ -1,20 +1,30 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <string.h>
+#include "log.h"
 struct TEST_STRUCT{
     const char *name;
     int (*test_func)(void);
 };
 
 int test_compare(void);
-void log_info(const wchar_t *fmt,...);
+
+void random_init(void);
+long random_long(void);
+void random_close(void);
 int test_other(void)
 {
-    log_info(L"莫名%d\n",100);
+    random_init();
+    for(int ix=0;ix<5;ix++){
+        wprintf(L"%d 0x%016lx\n",ix,random_long());
+    }
+    random_close();
     return 1;
 }
+int test_sqlite3(void);
 const struct TEST_STRUCT all_test[]={
     {"compare",test_compare},
+    {"sqlite3",test_sqlite3},
     {"other",test_other}
 };
 
@@ -37,5 +47,16 @@ void test_run(const char *test_name)
             }
         }
         return;
+    }
+    int len=strlen(test_name);
+    for (int ix=0;ix<3;ix++){
+        if(strncmp(all_test[ix].name,test_name,len+1)==0){
+            int res=all_test[ix].test_func();
+            if(res){
+                wprintf(L"运行测试 \033[1;0;33m%s\033[0m \033[0;31m失败\033[0m\n",all_test[ix].name);
+            } else {
+                wprintf(L"运行测试 \033[1;0;33m%s\033[0m \033[0;36m成功\033[0m\n",all_test[ix].name);
+            }
+        }
     }
 }

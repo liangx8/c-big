@@ -17,7 +17,7 @@ endif
 SRCS=$(wildcard *.c nameid/*.c)
 #SRCS=$(shell find . -name \*.c -and -type f)
 OBJS=${SRCS:.c=.o}
-LDFLAGS:=-Wall
+LDFLAGS:=-Wall -lsqlite3
 #LDFLAGS+=$(shell pkgconf --libs jansson)
 #LDFLAGS+= -static
 

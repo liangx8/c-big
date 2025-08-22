@@ -8,6 +8,13 @@
         "string.h": "c",
         "errno.h": "c",
         "abstract_db.h": "c",
-        "signal.h": "c"
+        "signal.h": "c",
+        "time.h": "c",
+        "clock_t.h": "c",
+        "time_t.h": "c",
+        "stddef.h": "c",
+        "clockid_t.h": "c",
+        "timer_t.h": "c",
+        "stdarg.h": "c"
     }
 }

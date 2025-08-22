@@ -17,7 +17,7 @@ long signed_rand(void)
     return (x1 << 31)+x2  + ((x2 << 40) & 0xc000000000000000);
 }
 
-int rd_print(const struct ABSTRACT_DB *db,long seq)
+int rd_print(const struct ABSTRACT_DB *db,uint64_t seq,int)
 {
     long *ptr=(long*)(db->raw+seq * sizeof(long));
     wprintf(L"%8ld:0x%016lx\n",seq,*ptr);
@@ -30,17 +30,17 @@ int rd_close(struct ABSTRACT_DB *db)
     
     return 0;
 }
-unsigned long rd_id(const struct ABSTRACT_DB *db,long seq)
+uint64_t rd_id(const struct ABSTRACT_DB *db,uint64_t seq)
 {
-    unsigned long *ptr= (unsigned long*)(db->raw+seq * sizeof(long));
+    uint64_t *ptr= (uint64_t*)(db->raw+seq * sizeof(long));
     return *ptr;
 }
 const struct ENTITY rd_entity={
     (CMP)                                       ulong_lt,
     (CMP)                                       long_cmp,
-    (int (*)(const void *,long))                rd_print,
+    (int (*)(const void *,uint64_t,int))            rd_print,
     (int (*)(void *))                           rd_close,
-    (unsigned long (*)(const void*db,long seq)) rd_id,
+    (uint64_t (*)(const void*db,uint64_t seq)) rd_id,
     8
 };
 struct ABSTRACT_DB* random_db(long size)

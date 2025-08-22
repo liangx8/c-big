@@ -42,7 +42,7 @@ void log_err(const wchar_t*fmt,...)
     struct tm tmv;
     clock_gettime(CLOCK_REALTIME,&ts);
     localtime_r(&ts.tv_sec,&tmv);
-    wprintf(LOG_E L"[\033[0;35m%02d:%02d:%02d %9d\033[0m] ",tmv.tm_hour,tmv.tm_min,tmv.tm_sec,ts.tv_nsec);
+    wprintf(LOG_E L"[\033[0;36m%02d:%02d:%02d %9d\033[0m] ",tmv.tm_hour,tmv.tm_min,tmv.tm_sec,ts.tv_nsec);
     va_list ap;
     va_start(ap,fmt);
     vwprintf(fmt,ap);

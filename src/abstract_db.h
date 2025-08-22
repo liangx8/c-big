@@ -1,13 +1,14 @@
 #pragma once
-#include <wchar.h>
 typedef long (*CMP) (const void *,const void *);
-
+#ifndef uint64_t
+typedef unsigned long uint64_t;
+#endif
 struct ENTITY{
     CMP                                          lt;
     CMP                                          cmp;
-    typeof(int (*)(const void*,long))            print;
+    typeof(int (*)(const void*,uint64_t,int))    print;
     typeof(int (*)(void *))                      close;
-    typeof(unsigned long (*)(const void *,long)) id;
+    typeof(uint64_t (*)(const void *,uint64_t))  id;
     const int                                    unitsize;
 };
 struct RANGES;
