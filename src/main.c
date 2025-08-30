@@ -59,6 +59,7 @@ int main(int argc, char **argv)
                 log_info(L"关闭数据库错误\n");
                 return -1;
             }
+            break;
         }
         case ACTION_SEARCH:
             log_info(L"0x%016lx,%lu\n",opts.num,opts.num);

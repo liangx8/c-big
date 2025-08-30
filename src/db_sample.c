@@ -134,21 +134,23 @@ struct ABSTRACT_DB* sample_db(uint64_t size)
     db->raw=base+sizeof(struct ABSTRACT_DB);
     char *pb=db->raw;
     random_init();
+    FILE *org=fopen("/home/ram/big/sample.bin","w+");
     for(uint64_t ix=0;ix<size;ix++){
         uint64_t *p64=(uint64_t*)pb;
         uint32_t *p32=(uint32_t*)(pb+8);
         *p64=random_long();
         *p32=ix;
         pb +=12;
+        fwrite(p64,1,8,org);
     }
+    fclose(org);
     random_close();
     log_info(L"总共生成%lu条记录\n",size);
     total_size=size;
 
     return base;
 }
-
-void sm_search(uint64_t val)
+void dbname(char *buf,const char *file)
 {
     const char *home=getenv("HOME");
     int namesize=strlen(home);
@@ -157,7 +159,11 @@ void sm_search(uint64_t val)
     buf[namesize]='/';
     strcat(buf,dbdir);
     buf[namesize+4]='/';
-    strcat(buf,dbfile);
+    strcat(buf,file);
+}
+void sm_search(uint64_t val)
+{
+    dbname(buf,dbfile);
     off_t size=filesize(buf);
     uint64_t end=size/smp_entity.unitsize;
     const uint64_t total=end;
@@ -192,7 +198,7 @@ void sm_search(uint64_t val)
     fread(data,12,10,fdb);
     for(int ix=0;ix<10;ix++){
         uint64_t *ptr=(uint64_t*)&data[ix *12];
-        uint32_t *iptr=(uint32_t*)&data[ix *12+4];
+        uint32_t *iptr=(uint32_t*)&data[ix *12+8];
         if(ix+start==mid){
             wprintf(L"\033[0;33m%8ld:0x%016lx,%11u\033[0m\n",ix+start,*ptr,*iptr);
         } else{
