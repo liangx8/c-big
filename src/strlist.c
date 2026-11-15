@@ -2,24 +2,29 @@
 
 #include <stdlib.h>
 #include <string.h>
-#define STRS_CAPACITY 100
-struct strlist {
+#define STRS_CAPACITY 1000
+struct _strlist {
     size_t strs_capacity;
     size_t strs_top;
     size_t buff_capacity;
     size_t buff_top;
     const char **strs;
-    char buffer[];
+    char *buffer;
 };
 
 strlist *strlist_create(void) {
-    int cap=sizeof(strlist) + INIT_CAPACITY;
-    struct strlist *list = malloc(cap);
+    struct _strlist *list = malloc(sizeof(struct _strlist));
     if (!list) {
         return NULL;
     }
     list->strs = (const char **)malloc(STRS_CAPACITY*sizeof(void *));
     if(list->strs == NULL){
+        free(list);
+        return NULL;
+    }
+    list->buffer=malloc(INIT_CAPACITY);
+    if(list->buffer == NULL){
+        free(list->strs);
         free(list);
         return NULL;
     }
@@ -33,12 +38,32 @@ strlist *strlist_create(void) {
 int strlist_add(strlist *list, const char *value) {
     // length include terminating byte('\n')
     size_t len=strlen(value)+1;
+    // 增加后的位置
     size_t after_len=list->buff_top + len;
+    // 把位置8字节对齐
+    if(after_len & 0x7){
+        after_len = (after_len + 0x08) & ~0x7;
+    }
     if(after_len >= list->buff_capacity){
         // allocate memory,暂时错误退出
-        return -1;
+        size_t new_cap=list->buff_capacity+10240;
+        void *tmp=realloc(list->buffer,new_cap);
+        if(tmp==NULL){
+            return -1;
+        }
+        list->buffer=tmp;
+        list->buff_capacity=new_cap;
     }
-    char *str_ptr=&(list->buffer[list->buff_top]);
+    if(list->strs_top==list->strs_capacity){
+        size_t new_cap=list->strs_capacity+1024;
+        void *tmp=realloc(list->strs,sizeof(void *)*new_cap);
+        if(tmp==NULL){
+            return -1;
+        }
+        list->strs_capacity=new_cap;
+        list->strs=tmp;
+    }
+    char *str_ptr=list->buffer+list->buff_top;
     memcpy(str_ptr,value,len);
     *(list->strs+list->strs_top)=str_ptr;
     list->strs_top ++;
@@ -62,5 +87,6 @@ size_t strlist_size(const strlist *list) {
 void strlist_destory(strlist *list)
 {
     free(list->strs);
+    free(list->buffer);
     free(list);
 }
