@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#define STRS_CAPACITY 1000
+#include <time.h>
+#define STRS_CAPACITY 512
 struct _strlist {
     size_t strs_capacity;
     size_t strs_top;
@@ -32,9 +33,19 @@ strlist *strlist_create(void) {
     list->buff_capacity = INIT_CAPACITY;
     list->buff_top = 0;
     list->strs_top = 0;
+    srand((unsigned)time(NULL));
 	return list;
 }
-
+int strlist_shuffle(strlist *list)
+{
+    for (size_t ix = list->strs_top; ix > 1; ix--) {
+        size_t other = (size_t)rand() % ix;
+        const char *tmp = list->strs[ix - 1];
+        list->strs[ix - 1] = list->strs[other];
+        list->strs[other] = tmp;
+    }
+    return 0;
+}
 int strlist_add(strlist *list, const char *value) {
     // length include terminating byte('\n')
     size_t len=strlen(value)+1;
@@ -45,7 +56,6 @@ int strlist_add(strlist *list, const char *value) {
         after_len = (after_len + 0x08) & ~0x7;
     }
     if(after_len >= list->buff_capacity){
-        // allocate memory,暂时错误退出
         size_t new_cap=list->buff_capacity+10240;
         void *tmp=realloc(list->buffer,new_cap);
         if(tmp==NULL){

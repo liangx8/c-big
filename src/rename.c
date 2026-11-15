@@ -1,7 +1,7 @@
 #include <wchar.h>
 #include <dirent.h>
 #include "strlist.h"
-
+#include "log.h"
 struct _source{
     DIR *top;
     strlist *sl;
@@ -19,6 +19,7 @@ int rename_action(int argc, char *argv[]) {
         wprintf(L"Usage: rename <top_path> <prefix>\n");
         return -1;
     }
+    logname="/tmp/test.log";
     const char *toppath = argv[1];
     //const char *prefix = argv[2];
     // Implement the rename logic here
@@ -46,8 +47,8 @@ int rename_action(int argc, char *argv[]) {
     }
     int size=strlist_size(source.sl);
     for(int ix=0;ix<size;ix++){
-        wprintf(L"%s/%s\n",toppath,strlist_get(source.sl,ix));
+        log_info(L"%s/%s\n",toppath,strlist_get(source.sl,ix));
     }
-    wprintf(L"total files %d\n",size);
+    log_info(L"total files %d\n",size);
     return 0;
 }
