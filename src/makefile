@@ -5,7 +5,7 @@ CFLAGS:=-Wall
 #CFLAGS+=-DFIXING_BUG
 #CFLAGS+=-DNDEBUG
 #CFLAGS+=$(shell pkgconf --cflags json-c)
-TARGET=big
+TARGET=wbtool
 
 #CFLAGS+=-O2
 #CFLAGS+=-g
@@ -17,7 +17,8 @@ endif
 SRCS=$(wildcard *.c nameid/*.c)
 #SRCS=$(shell find . -name \*.c -and -type f)
 OBJS=${SRCS:.c=.o}
-LDFLAGS:=-Wall -lsqlite3
+LDFLAGS:=-Wall
+#LDFLAGS+=-lsqlite3
 #LDFLAGS+=$(shell pkgconf --libs jansson)
 #LDFLAGS+= -static
 
