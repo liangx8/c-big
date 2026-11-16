@@ -22,7 +22,6 @@ int rename_action(int argc, char *argv[]) {
     logname="/tmp/test.log";
     const char *toppath = argv[1];
     //const char *prefix = argv[2];
-    // Implement the rename logic here
     __attribute__((cleanup(auto_cleanup))) struct _source source;
     source.sl = NULL;
     source.top = opendir(toppath);

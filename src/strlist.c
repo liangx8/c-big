@@ -1,8 +1,10 @@
+#define _POSIX_C_SOURCE 200809L
 #include "strlist.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
 #define STRS_CAPACITY 512
 struct _strlist {
     size_t strs_capacity;
@@ -36,6 +38,7 @@ strlist *strlist_create(void) {
     srand((unsigned)time(NULL));
 	return list;
 }
+
 int strlist_shuffle(strlist *list)
 {
     for (size_t ix = list->strs_top; ix > 1; ix--) {
@@ -99,4 +102,39 @@ void strlist_destory(strlist *list)
     free(list->strs);
     free(list->buffer);
     free(list);
+}
+
+strlist    *all_line(FILE *file){
+    if(file == NULL) {
+        return NULL;
+    }
+
+    strlist *list = strlist_create();
+    if(list == NULL) {
+        return NULL;
+    }
+
+    char *line = NULL;
+    size_t capacity = 0;
+    ssize_t length;
+    while((length = getline(&line, &capacity, file)) != -1) {
+        if(length > 0 && line[length - 1] == '\n') {
+            line[--length] = '\0';
+            if(length > 0 && line[length - 1] == '\r') {
+                line[--length] = '\0';
+            }
+        }
+        if(strlist_add(list, line) != 0) {
+            free(line);
+            strlist_destory(list);
+            return NULL;
+        }
+    }
+    free(line);
+
+    if(ferror(file) || !feof(file)) {
+        strlist_destory(list);
+        return NULL;
+    }
+    return list;
 }

@@ -1,6 +1,10 @@
+#include <stddef.h>
+#include <stdio.h>
+
 typedef struct _strlist strlist;
-typedef unsigned long size_t;
-strlist *   strlist_create(void);
+strlist    *strlist_create(void);
+
+strlist    *all_line(FILE *file);
 int         strlist_add(strlist *list, const char *value);
 void        strlist_clear(strlist *list);
 void        strlist_destory(strlist *list);
