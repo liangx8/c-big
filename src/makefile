@@ -32,7 +32,7 @@ ${TARGET}:${OBJS}
 	${CC} -o $@ ${OBJS} ${LDFLAGS}
 clean:
 	${RM} ${TARGET}
-	find . -name \*~ -or -name \*.o -exec ${RM} \{} \;
+	find . \( -name \*~ -or -name \*.o \) -exec ${RM} \{} \;
 
 #%.o:%.cpp
 .c.o:
