@@ -15,9 +15,6 @@ int test3(int argc,char *argv[])
         wprintf(L"文件格式错误:%s\n",result.errmsg);
         return -1;
     }
-    toml_datum_t aa=toml_seek(result.toptab,"aa");
-    toml_datum_t bb=toml_seek(result.toptab,"bb");
-    wprintf(L"aa=%s\nbb=%ld\n",aa.u.s,bb.u.int64);
     toml_free(result);
     return 0;
 }
