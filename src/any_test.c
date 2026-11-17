@@ -3,20 +3,18 @@
 #include <stdio.h>
 #include "strlist.h"
 #include "log.h"
-#include "tomlc17.h"
+#include "cfg_data.h"
 int test3(int argc,char *argv[])
 {
     if(argc==1){
         wprintf(L"请提供设置文件名\n  test <toml_file>\n");
         return -1;
     }
-    toml_result_t result=toml_parse_file_ex(argv[1]);
-    if(!result.ok){
-        wprintf(L"文件格式错误:%s\n",result.errmsg);
-        return -1;
+    struct CFG_DATA cfg=load_cfg(argv[1]);
+    if(cfg.status==STATUS_OK){
+        return 0;
     }
-    toml_free(result);
-    return 0;
+    return -1;
 }
 void test2(int argc,char *argv[])
 {
