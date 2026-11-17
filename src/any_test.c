@@ -12,6 +12,7 @@ int test3(int argc,char *argv[])
     }
     struct CFG_DATA cfg=load_cfg(argv[1]);
     if(cfg.status==STATUS_OK){
+        wprintf(L"wallpaper path:%s\nlog file:%s\n",cfg.wallpaper_path,cfg.logname);
         return 0;
     }
     return -1;
