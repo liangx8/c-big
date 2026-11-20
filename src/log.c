@@ -26,5 +26,6 @@ void log_info(const wchar_t *fmt, ...)
     va_start(args,fmt);
     vfwprintf(lh,fmt,args);
     va_end(args);
+    fwprintf(lh,L"\n");
     fclose(lh);
 }

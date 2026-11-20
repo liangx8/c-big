@@ -6,6 +6,9 @@ struct CFG_DATA load_cfg(const char *cfgname)
 {
     struct CFG_DATA cfg;
     logname="/tmp/test.log";
+    cfg.list=NULL;
+    cfg.logname=NULL;
+    cfg.wallpaper_path=NULL;
     toml_result_t result=toml_parse_file_ex(cfgname);
     if(!result.ok){
         log_info(L"文件格式错误:%s\n",result.errmsg);
@@ -34,5 +37,7 @@ struct CFG_DATA load_cfg(const char *cfgname)
     return cfg;
 }
 void free_cfg(struct CFG_DATA cfg){
-    strlist_destroy(cfg.list);
+    if(cfg.list){
+        strlist_destroy(cfg.list);
+    }
 }
