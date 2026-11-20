@@ -5,6 +5,7 @@ struct CFG_DATA{
     const char* logname;
     const char* wallpaper_path;
     strlist *list;
+    int wallpaper_count_total;
     int status;
 };
 #define STATUS_OK 1

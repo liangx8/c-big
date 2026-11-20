@@ -1,140 +1,206 @@
-#define _POSIX_C_SOURCE 200809L
 #include "strlist.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <stdio.h>
-#define STRS_CAPACITY 512
-struct _strlist {
-    size_t strs_capacity;
-    size_t strs_top;
-    size_t buff_capacity;
-    size_t buff_top;
-    const char **strs;
+
+#define STRLIST_ALIGNMENT 8
+#define STRLIST_INITIAL_OFFSETS 16
+#define STRLIST_INITIAL_BUFFER 1024
+
+#define ALIGN_UP_8(value) \
+    (((value) + (STRLIST_ALIGNMENT - 1)) & ~((size_t)(STRLIST_ALIGNMENT - 1)))
+
+struct strlist {
+    size_t *offsets;
+    size_t offsets_capacity;
+    size_t str_count;
+
     char *buffer;
+    size_t buffer_capacity;
+    size_t buffer_size;
 };
 
-strlist *strlist_create(void) {
-    struct _strlist *list = malloc(sizeof(struct _strlist));
+static void ensure_random_seed(void)
+{
+    static int seeded;
+    if (!seeded) {
+        srand((unsigned)time(NULL));
+        seeded = 1;
+    }
+}
+
+strlist *strlist_create(void)
+{
+    strlist *list = calloc(1, sizeof(*list));
     if (!list) {
         return NULL;
     }
-    list->strs = (const char **)malloc(STRS_CAPACITY*sizeof(void *));
-    if(list->strs == NULL){
+
+    list->offsets = malloc(STRLIST_INITIAL_OFFSETS * sizeof(*list->offsets));
+    list->buffer = malloc(STRLIST_INITIAL_BUFFER);
+    if (!list->offsets || !list->buffer) {
+        free(list->offsets);
+        free(list->buffer);
         free(list);
         return NULL;
     }
-    list->buffer=malloc(INIT_CAPACITY);
-    if(list->buffer == NULL){
-        free(list->strs);
-        free(list);
+
+    list->offsets_capacity = STRLIST_INITIAL_OFFSETS;
+    list->buffer_capacity = STRLIST_INITIAL_BUFFER;
+    ensure_random_seed();
+    return list;
+}
+
+static int ensure_offsets_capacity(strlist *list)
+{
+    if (list->str_count < list->offsets_capacity) {
+        return 0;
+    }
+
+    if (list->offsets_capacity > SIZE_MAX / 2) {
+        return -1;
+    }
+
+    size_t capacity = list->offsets_capacity * 2;
+    if (capacity > SIZE_MAX / sizeof(*list->offsets)) {
+        return -1;
+    }
+
+    size_t *new_offsets = realloc(list->offsets,
+                                  capacity * sizeof(*list->offsets));
+    if (!new_offsets) {
+        return -1;
+    }
+
+    list->offsets = new_offsets;
+    list->offsets_capacity = capacity;
+    return 0;
+}
+
+static int ensure_buffer_capacity(strlist *list, size_t needed)
+{
+    if (needed <= list->buffer_capacity) {
+        return 0;
+    }
+
+    size_t capacity = list->buffer_capacity;
+    while (capacity < needed) {
+        if (capacity > SIZE_MAX / 2) {
+            capacity = needed;
+            break;
+        }
+        capacity *= 2;
+    }
+
+    char *new_buffer = realloc(list->buffer, capacity);
+    if (!new_buffer) {
+        return -1;
+    }
+
+    list->buffer = new_buffer;
+    list->buffer_capacity = capacity;
+    return 0;
+}
+
+int strlist_add(strlist *list, const char *value)
+{
+    if (!list || !value) {
+        return -1;
+    }
+
+    size_t length = strlen(value);
+    if (length == SIZE_MAX || length + 1 > SIZE_MAX - (STRLIST_ALIGNMENT - 1)) {
+        return -1;
+    }
+
+    size_t storage_size = ALIGN_UP_8(length + 1);
+    if (list->buffer_size > SIZE_MAX - storage_size) {
+        return -1;
+    }
+
+    size_t needed = list->buffer_size + storage_size;
+    if (ensure_buffer_capacity(list, needed) != 0) {
+        return -1;
+    }
+    if (ensure_offsets_capacity(list) != 0) {
+        return -1;
+    }
+
+    size_t offset = list->buffer_size;
+    memcpy(list->buffer + offset, value, length + 1);
+    list->offsets[list->str_count] = offset;
+    list->str_count++;
+    list->buffer_size = needed;
+    return 0;
+}
+
+size_t strlist_size(const strlist *list)
+{
+    return list ? list->str_count : 0;
+}
+
+const char *strlist_get(const strlist *list, size_t index)
+{
+    if (!list || index >= list->str_count) {
         return NULL;
     }
-    list->strs_capacity = STRS_CAPACITY;
-    list->buff_capacity = INIT_CAPACITY;
-    list->buff_top = 0;
-    list->strs_top = 0;
-    srand((unsigned)time(NULL));
-	return list;
+    return list->buffer + list->offsets[index];
 }
 
 int strlist_shuffle(strlist *list)
 {
-    for (size_t ix = list->strs_top; ix > 1; ix--) {
-        size_t other = (size_t)rand() % ix;
-        const char *tmp = list->strs[ix - 1];
-        list->strs[ix - 1] = list->strs[other];
-        list->strs[other] = tmp;
+    if (!list) {
+        return -1;
+    }
+
+    for (size_t i = list->str_count; i > 1; i--) {
+        size_t j = (size_t)rand() % i;
+        size_t temporary = list->offsets[i - 1];
+        list->offsets[i - 1] = list->offsets[j];
+        list->offsets[j] = temporary;
     }
     return 0;
 }
-int strlist_add(strlist *list, const char *value) {
-    // length include terminating byte('\n')
-    size_t len=strlen(value)+1;
-    // 增加后的位置
-    size_t after_len=list->buff_top + len;
-    // 把位置8字节对齐
-    if(after_len & 0x7){
-        after_len = (after_len + 0x08) & ~0x7;
-    }
-    if(after_len >= list->buff_capacity){
-        size_t new_cap=list->buff_capacity+10240;
-        void *tmp=realloc(list->buffer,new_cap);
-        if(tmp==NULL){
-            return -1;
-        }
-        list->buffer=tmp;
-        list->buff_capacity=new_cap;
-    }
-    if(list->strs_top==list->strs_capacity){
-        size_t new_cap=list->strs_capacity+1024;
-        void *tmp=realloc(list->strs,sizeof(void *)*new_cap);
-        if(tmp==NULL){
-            return -1;
-        }
-        list->strs_capacity=new_cap;
-        list->strs=tmp;
-    }
-    char *str_ptr=list->buffer+list->buff_top;
-    memcpy(str_ptr,value,len);
-    *(list->strs+list->strs_top)=str_ptr;
-    list->strs_top ++;
-    list->buff_top = after_len;
-    return 0;
-}
 
-void strlist_clear(strlist *list) {
-}
-
-const char *strlist_get(const strlist *list, int index) {
-    if(index >= list->strs_top){
-        return NULL;
-    }
-    return *(list->strs + index);
-}
-size_t strlist_size(const strlist *list) {
-    return list->strs_top;
-}
-
-void strlist_destory(strlist *list)
+int strlist_order(strlist *list)
 {
-    free(list->strs);
+    if (!list) {
+        return -1;
+    }
+
+    for (size_t i = 1; i < list->str_count; i++) {
+        size_t key = list->offsets[i];
+        size_t j = i;
+
+        while (j > 0) {
+            const char *left = list->buffer + list->offsets[j - 1];
+            const char *right = list->buffer + key;
+            if (strcmp(left, right) <= 0) {
+                break;
+            }
+            list->offsets[j] = list->offsets[j - 1];
+            j--;
+        }
+
+        list->offsets[j] = key;
+    }
+    return 0;
+}
+
+int strlist_sort(strlist *list)
+{
+    return strlist_order(list);
+}
+
+void strlist_destroy(strlist *list)
+{
+    if (!list) {
+        return;
+    }
+    free(list->offsets);
     free(list->buffer);
     free(list);
 }
 
-strlist    *all_line(FILE *file){
-    if(file == NULL) {
-        return NULL;
-    }
-
-    strlist *list = strlist_create();
-    if(list == NULL) {
-        return NULL;
-    }
-
-    char *line = NULL;
-    size_t capacity = 0;
-    ssize_t length;
-    while((length = getline(&line, &capacity, file)) != -1) {
-        if(length > 0 && line[length - 1] == '\n') {
-            line[--length] = '\0';
-            if(length > 0 && line[length - 1] == '\r') {
-                line[--length] = '\0';
-            }
-        }
-        if(strlist_add(list, line) != 0) {
-            free(line);
-            strlist_destory(list);
-            return NULL;
-        }
-    }
-    free(line);
-
-    if(ferror(file) || !feof(file)) {
-        strlist_destory(list);
-        return NULL;
-    }
-    return list;
-}
